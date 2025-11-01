@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViralScript - AI Script Editor</title>
+    <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/img/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="aurora-background"></div>
+
+    <div class="app-container">
+        <!-- Center Panel: Editor -->
+        <main class="editor-panel">
+            <header class="panel-header">
+                <div class="panel-title">
+                    <img src="assets/img/logo.svg" alt="ViralScript logo" class="site-logo" width="48" height="48" />
+                    <h1>ViralScript 🧪</h1>
+                </div>
+                <button id="copy-script-btn" class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy Script</span>
+                </button>
+            </header>
+
+            <div class="script-wrapper">
+                <!-- Pre-Writing Setup -->
+                <div class="pre-writing-setup">
+                    <div class="setup-item">
+                        <label for="content-goal">Goal</label>
+                        <select id="content-goal">
+                            <option value="ပညာပေး">ပညာပေး (Educate)</option>
+                            <option value="ဖျော်ဖြေရေး">ဖျော်ဖြေရေး (Entertain)</option>
+                            <option value="ရောင်းချ">ရောင်းချ (Sell)</option>
+                            <option value="လှုံ့ဆော်">လှုံ့ဆော် (Inspire)</option>
+                        </select>
+                    </div>
+                    <div class="setup-item">
+                        <label for="target-audience">Audience</label>
+                        <select id="target-audience">
+                            <option value="ကျောင်းသား">ကျောင်းသား</option>
+                            <option value="လုပ်ငန်းရှင်">လုပ်ငန်းရှင်</option>
+                            <option value="Content Creator">Content Creator</option>
+                            <option value="ဝန်ထမ်း">ဝန်ထမ်း</option>
+                            <option value="အမျိုးသမီး">အမျိုးသမီး</option>
+                            <option value="ယေဘုယျ">ယေဘုယျ</option>
+                        </select>
+                    </div>
+                    <div class="setup-item">
+                        <label for="platform-fit">Platform</label>
+                        <select id="platform-fit">
+                            <option value="TikTok">TikTok</option>
+                            <option value="Facebook Reels">Facebook Reels</option>
+                            <option value="YouTube Shorts">YouTube Shorts</option>
+                            <option value="အားလုံးနှင့်ကိုက်ညီ">အားလုံးနှင့်ကိုက်ညီ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Script Components -->
+                <div id="hook-section" class="script-component">
+                    <div class="component-header">
+                        <h3>🎯 Hook</h3>
+                        <button id="hook-bank-btn" class="component-action-btn">💡 Hook Bank</button>
+                    </div>
+                    <textarea id="hook-input" placeholder="ကြည့်ရှုသူကို ၃ စက္ကန့်အတွင်း ဖမ်းစားနိုင်မယ့် Hook..."></textarea>
+                </div>
+                <div id="body-section" class="script-component">
+                    <h3>BODY</h3>
+                    <textarea id="body-input" placeholder="တန်ဖိုး (Value) ကို ဒီမှာပေးပါ..."></textarea>
+                </div>
+                <div id="cta-section" class="script-component">
+                    <h3>📣 Call to Action</h3>
+                    <textarea id="cta-input" placeholder="Follow, Like, Comment... ဘာလုပ်စေချင်လဲ?"></textarea>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: AI Chat -->
+        <aside class="chat-panel">
+            <header class="panel-header chat-header">
+                <div class="ai-personality-selector">
+                    <label for="ai-personality">Coach Persona</label>
+                    <select id="ai-personality">
+                        <option value="Creative Coach">Creative Coach</option>
+                        <option value="Viral Editor">Viral Editor</option>
+                        <option value="Hook Analyzer">Hook Analyzer</option>
+                    </select>
+                </div>
+                <div class="header-controls">
+                    <button id="clear-chat-btn" class="icon-btn" title="Clear Chat History">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                    <div id="api-status" class="status-light-red" title="API Key မထည့်ရသေးပါ"></div>
+                    <button id="settings-btn" class="icon-btn" title="Settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                </div>
+            </header>
+            
+            <div id="ai-chat-history" class="chat-history">
+                <!-- Chat messages will appear here -->
+            </div>
+
+            <!-- Live Analysis Box -->
+            <div id="live-analysis-box" class="live-analysis">
+                <div class="analysis-header">
+                    <h4>💡 Live Analysis</h4>
+                    <div id="analysis-status" class="status-indicator">Idle</div>
+                </div>
+                <div id="analysis-content" class="analysis-content">
+                    <!-- Feedback will be displayed here -->
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="quick-actions">
+                     <button class="quick-action-btn" data-prompt="ကျွန်တော်ရေးထားတဲ့ script တစ်ခုလုံးကို သုံးသပ်ပြီး အကြံဉာဏ်ပေးပါ။">Script သုံးသပ်မည်</button>
+                     <button class="quick-action-btn" data-prompt="ကျွန်တော်ရေးထားတဲ့ Hook အတွက် ပိုကောင်းတဲ့ idea ၅ ခုလောက်ပေးပါ။">Hook Ideas တောင်းမည်</button>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="chat-input" placeholder="AI Coach ကို မေးခွန်းမေးပါ..." rows="1"></textarea>
+                    <button id="send-chat-btn" title="Send Message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <button id="close-modal-btn" class="close-btn">&times;</button>
+            <h2>Settings</h2>
+            <div class="api-key-wrapper">
+                <label for="api-key-input">Google Gemini API Key</label>
+                <input type="password" id="api-key-input" placeholder="သင်၏ API key ကို ဤနေရာတွင် ထည့်ပါ">
+                <button id="save-api-key-btn">Key ကို သိမ်းမည်</button>
+                <button id="delete-api-key-btn" class="danger">Key ကို ဖျက်မည်</button>
+                <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hook Bank Modal -->
+    <div id="hook-bank-modal" class="modal">
+        <div class="modal-content hook-bank-content">
+            <button id="close-hook-modal-btn" class="close-btn">&times;</button>
+            <h2>📘 Viral Hook Bank</h2>
+            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ editor ထဲရောက်သွားပါမယ်။</p>
+            <div id="hook-bank-list" class="hook-bank-list">
+                <!-- Hooks will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/ai.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
