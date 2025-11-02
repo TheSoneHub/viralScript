@@ -497,3 +497,30 @@ button.danger { background: var(--danger-color); color: white; margin-top: 10px;
         width: 95%;
     }
 }
+
+/* ... (All other styles are unchanged) ... */
+
+/* 👇 ADD THIS TO YOUR CSS FILE 👇 */
+
+/* Utility class to hide/show elements */
+.hidden {
+    display: none !important;
+}
+
+.key-status-display {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+button.danger { 
+    background: var(--danger-color); 
+    color: white; 
+    margin-top: 10px; 
+}
+
+/* ... */

@@ -135,21 +135,43 @@
         </aside>
     </div>
     
+<!-- ... (Rest of the file is unchanged) ... -->
+
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <button id="close-modal-btn" class="close-btn">&times;</button>
             <h2>Settings</h2>
-            <div class="api-key-wrapper">
-                <label for="api-key-input">Google Gemini API Key</label>
-                <input type="password" id="api-key-input" placeholder="သင်၏ API key ကို ဤနေရာတွင် ထည့်ပါ">
-                <button id="save-api-key-btn">Key ကို သိမ်းမည်</button>
-                <button id="delete-api-key-btn" class="danger">Key ကို ဖျက်မည်</button>
-                <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
+            
+            <!-- 👇 NEW STRUCTURE FOR API KEY MANAGEMENT 👇 -->
+            <div class="api-key-management">
+            
+                <!-- State 1: For entering a new key (Visible when no key is set) -->
+                <div id="api-key-entry-state">
+                    <div class="api-key-wrapper">
+                        <label for="api-key-input">Google Gemini API Key</label>
+                        <input type="password" id="api-key-input" placeholder="သင်၏ API key ကို ဤနေရာတွင် ထည့်ပါ">
+                        <button id="save-api-key-btn">Key ကို သိမ်းမည်</button>
+                        <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
+                    </div>
+                </div>
+
+                <!-- State 2: For managing an existing key (Visible when key is already set) -->
+                <div id="api-key-manage-state" class="hidden">
+                    <div class="api-key-wrapper">
+                        <label>Current API Key Status</label>
+                        <div class="key-status-display">
+                            <span>API Key ထည့်သွင်းပြီးဖြစ်ပါသည်။</span>
+                        </div>
+                        <button id="delete-api-key-btn" class="danger">Key ကို ဖျက်မည်</button>
+                        <p class="notice">Key အသစ်ပြောင်းထည့်လိုပါက လက်ရှိ Key ကို အရင်ဖျက်ပါ။</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
-    
+<!-- ... -->
     <!-- Hook Bank Modal -->
     <div id="hook-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
