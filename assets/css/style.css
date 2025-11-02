@@ -1,7 +1,3 @@
-/* ==========================================================================
-   1. Root Variables & Global Styles
-   ========================================================================== */
-
 :root {
     --bg-color: #111214;
     --panel-bg: #1A1B1E;
@@ -13,7 +9,7 @@
     --accent-glow: rgba(56, 114, 255, 0.5);
     --danger-color: #E5484D;
     --user-msg-bg: #2A2F3D;
-    --ai-msg-bg: #222326;
+    --ai-msg-bg: rgba(30, 31, 34, 0.8);
     --font-primary: 'Inter', sans-serif;
     --font-mono: 'Roboto Mono', monospace;
 }
@@ -24,12 +20,15 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+}
+
 body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: var(--font-primary);
-    height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* Prevent body scroll on desktop */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -42,18 +41,14 @@ body {
     height: 1400px;
     transform: translate(-50%, -50%);
     background-image: radial-gradient(circle, var(--accent-color) 0%, #ff00c8 50%, #7500ff 100%);
-    opacity: 0.08;
+    opacity: 0.1;
     filter: blur(150px);
     z-index: -1;
 }
 
-/* ==========================================================================
-   2. Main App Layout
-   ========================================================================== */
-
 .app-container {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: minmax(400px, 1.2fr) 1fr;
     width: 100%;
     height: 100%;
     gap: 1.5rem;
@@ -78,23 +73,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Logo + title alignment */
-.panel-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-.panel-title .site-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    object-fit: cover;
-}
-
-/* ==========================================================================
-   3. Editor Panel Styles
-   ========================================================================== */
-
 .panel-title h1 {
     font-size: 1.5rem;
     font-weight: 600;
@@ -116,9 +94,12 @@ body {
 .header-action-btn:hover {
     background-color: #4D83FF;
 }
+.header-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
 
 .script-wrapper {
-    flex-grow: 1;
     overflow-y: auto;
     padding: 1.5rem;
 }
@@ -158,6 +139,7 @@ select {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 }
+
 select:focus {
     outline: none;
     border-color: var(--accent-color);
@@ -167,19 +149,17 @@ select:focus {
 .script-component {
     margin-bottom: 1.5rem;
 }
-
-.component-header {
+.script-component .component-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
 }
-.component-header h3 {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+.script-component h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
     font-weight: 500;
 }
-
 .component-action-btn {
     background: none;
     border: 1px solid var(--border-color);
@@ -194,7 +174,6 @@ select:focus {
     background-color: var(--border-color);
     color: var(--text-primary);
 }
-
 textarea {
     width: 100%;
     background-color: var(--input-bg);
@@ -205,8 +184,8 @@ textarea {
     font-family: var(--font-mono);
     font-size: 1rem;
     resize: vertical;
-    transition: all 0.2s ease-in-out;
     min-height: 120px;
+    transition: all 0.2s ease-in-out;
 }
 textarea:focus {
     outline: none;
@@ -214,14 +193,9 @@ textarea:focus {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* ==========================================================================
-   4. Chat Panel Styles
-   ========================================================================== */
-
-.chat-header {
+.chat-panel .panel-header {
     gap: 1rem;
 }
-
 .ai-personality-selector {
     flex-grow: 1;
 }
@@ -239,15 +213,24 @@ textarea:focus {
     padding: 0;
     background-position: right 0 center;
 }
-
 .header-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
-.status-light-red { width: 10px; height: 10px; background-color: var(--danger-color); border-radius: 50%;}
-.status-light-green { width: 10px; height: 10px; background-color: #2ED573; border-radius: 50%; box-shadow: 0 0 8px #2ED573;}
-
+.status-light-red {
+    width: 10px;
+    height: 10px;
+    background-color: var(--danger-color);
+    border-radius: 50%;
+}
+.status-light-green {
+    width: 10px;
+    height: 10px;
+    background-color: #2ED573;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #2ED573;
+}
 .icon-btn {
     background-color: transparent;
     border: none;
@@ -270,12 +253,11 @@ textarea:focus {
 .chat-history {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
 }
-
 .chat-message {
     padding: 0.8rem 1.2rem;
     border-radius: 16px;
@@ -286,103 +268,42 @@ textarea:focus {
 .chat-message p:last-child { margin-bottom: 0; }
 .chat-message ul, .chat-message ol { padding-left: 20px; }
 .chat-message strong { color: var(--text-primary); font-weight: 600; }
-.chat-message code {
-    background-color: var(--bg-color);
-    padding: 0.2em 0.4em;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-}
-.chat-message pre {
-    background-color: var(--bg-color);
-    padding: 1rem;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 1rem 0;
-}
-
 .user-message {
     background-color: var(--user-msg-bg);
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
-
 .ai-message {
     background-color: var(--ai-msg-bg);
     align-self: flex-start;
     border-bottom-left-radius: 4px;
 }
 
-.chat-input-area {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--border-color);
-    background-color: rgba(0,0,0,0.2);
-}
-.quick-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-.quick-action-btn {
-    flex-grow: 1;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    padding: 8px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-}
-.quick-action-btn:hover { background: var(--border-color); color: var(--text-primary); }
-
-.input-wrapper { display: flex; gap: 0.5rem; align-items: flex-end; }
-#chat-input {
-    flex-grow: 1;
-    border: 1px solid var(--border-color);
-    background-color: var(--input-bg);
-    min-height: 44px;
-    max-height: 150px;
-    resize: none;
-    font-family: var(--font-primary);
-    border-radius: 12px;
-    padding: 0.75rem;
-    color: var(--text-primary);
-}
-
-#send-chat-btn {
-    background-color: var(--accent-color);
-    color: white;
-    min-width: 44px;
-    height: 44px;
-    border-radius: 12px;
-}
-#send-chat-btn:hover { background-color: #4D83FF; }
-
-/* ==========================================================================
-   5. Live Analysis Engine Styles
-   ========================================================================== */
-
 .live-analysis {
     border-top: 1px solid var(--border-color);
-    padding: 0 1.5rem;
+    padding: 1rem 1.5rem;
     background-color: rgba(0, 0, 0, 0.1);
     opacity: 0;
     transform: translateY(10px);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease;
     max-height: 0;
     overflow: hidden;
 }
 .live-analysis.active {
     opacity: 1;
     transform: translateY(0);
-    max-height: 600px;
-    padding: 1rem 1.5rem;
+    max-height: 500px;
 }
-
 .analysis-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
 }
-.analysis-header h4 { color: var(--text-secondary); font-weight: 500; }
-
+.analysis-header h4 {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
 .status-indicator {
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -396,21 +317,100 @@ textarea:focus {
     border-color: var(--accent-color);
     animation: pulse 1.5s infinite;
 }
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+.analysis-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+.analysis-content .analysis-item {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+}
+.analysis-content .analysis-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    width: 90px;
+    flex-shrink: 0;
+}
+.analysis-strength {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.strength-Weak {
+    color: #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.1);
+}
+.strength-Medium {
+    color: #feca57;
+    background-color: rgba(254, 202, 87, 0.1);
+}
+.strength-Strong {
+    color: #1dd1a1;
+    background-color: rgba(29, 209, 161, 0.1);
+}
 
-.analysis-content p { margin: 0; font-size: 0.7rem; line-height: 1.6; }
-.analysis-content .analysis-item { display: flex; align-items: baseline; margin-bottom: 0.7rem; }
-.analysis-content .analysis-label { font-weight: 600; color: var(--text-secondary); width: 90px; flex-shrink: 0; font-size: 0.75rem; }
-.analysis-content .analysis-text { font-size: 0.7rem; }
-.analysis-strength { font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; }
-.strength-Weak { color: #ff6b6b; background-color: rgba(255, 107, 107, 0.1); }
-.strength-Medium { color: #feca57; background-color: rgba(254, 202, 87, 0.1); }
-.strength-Strong { color: #1dd1a1; background-color: rgba(29, 209, 161, 0.1); }
+.chat-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: rgba(0,0,0,0.2);
+}
+.quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.quick-action-btn {
+    flex-grow: 1;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.quick-action-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+.input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+#chat-input {
+    flex-grow: 1;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    min-height: 44px;
+    max-height: 150px;
+    font-family: var(--font-primary);
+    border-radius: 12px;
+    padding: 10px;
+    color: var(--text-primary);
+    resize: none;
+}
+#send-chat-btn {
+    background-color: var(--accent-color);
+    color: white;
+    min-width: 44px;
+    height: 44px;
+    border-radius: 12px;
+}
+#send-chat-btn:hover {
+    background-color: #4D83FF;
+}
 
-/* ==========================================================================
-   6. Modal Styles (Settings & Hook Bank)
-   ========================================================================== */
-
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -421,14 +421,12 @@ textarea:focus {
     height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
     animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 .modal-content {
     background-color: var(--panel-bg);
-    margin: 10% auto;
+    margin: 15% auto;
     padding: 2rem;
     border: 1px solid var(--border-color);
     width: 90%;
@@ -437,76 +435,61 @@ textarea:focus {
     position: relative;
     animation: slideIn 0.3s ease;
 }
-@keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.close-btn { position: absolute; top: 1rem; right: 1.5rem; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
-.close-btn:hover { color: white; }
-
-.modal-content h2 { margin-bottom: 0.5rem; }
-.api-key-wrapper label { font-size: 0.9rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem; margin-top: 1rem; }
-.api-key-wrapper input { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-.notice { font-size: 0.75rem; color: var(--text-secondary); margin-top: 10px; }
-button#save-api-key-btn { width: 100%; padding: 12px; font-weight: 600; }
-button.danger { background: var(--danger-color); color: white; margin-top: 10px; width: 100%; padding: 12px; font-weight: 600; border-radius: 8px; border:none; cursor:pointer;}
-
-.hook-bank-content { max-width: 700px; height: 70vh; display: flex; flex-direction: column; }
-.modal-subtitle { color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
-.hook-bank-list { flex-grow: 1; overflow-y: auto; padding-right: 1rem; }
-.hook-category { margin-bottom: 2rem; }
-.hook-category h3 { font-size: 1.1rem; font-weight: 600; color: var(--accent-color); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-.hook-item { background-color: var(--input-bg); padding: 1rem; border-radius: 8px; border: 1px solid transparent; margin-bottom: 0.75rem; cursor: pointer; transition: all 0.2s ease-in-out; font-family: var(--font-mono); }
-.hook-item:hover { border-color: var(--accent-color); transform: translateX(5px); }
+@keyframes slideIn { from { transform: translateY(-50px); } to { transform: translateY(0); } }
+.close-btn {
 
 
-/* ==========================================================================
-   7. Responsive Design
-   ========================================================================== */
-
-@media (max-width: 1024px) {
-    .app-container {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto;
-        height: auto;
-        min-height: 100vh;
-        padding: 1rem;
-        gap: 1rem;
-    }
-    .editor-panel {
-        min-height: 50vh;
-    }
-    .chat-panel {
-        min-height: 80vh;
-    }
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    background: none;
+    border: none;
 }
-
-@media (max-width: 640px) {
-    body {
-        overflow-y: auto;
-    }
-    .app-container {
-        padding: 0.5rem;
-    }
-    .panel-header, .script-wrapper, .chat-history, .chat-input-area {
-        padding: 1rem;
-    }
-    .pre-writing-setup {
-        grid-template-columns: 1fr;
-    }
-    .modal-content {
-        margin: 5% auto;
-        width: 95%;
-    }
+.close-btn:hover {
+    color: white;
 }
-
-/* ... (All other styles are unchanged) ... */
-
-/* 👇 ADD THIS TO YOUR CSS FILE 👇 */
-
-/* Utility class to hide/show elements */
+.api-key-wrapper label, .modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.api-key-wrapper input {
+    width: 100%;
+    background-color: var(--dark-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+.notice {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+}
+.modal-content button {
+    background: var(--accent-color);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s ease;
+    width: 100%;
+}
+.modal-content button:hover {
+    background-color: #4D83FF;
+}
+.modal-content button.danger {
+    background: var(--danger-color);
+    margin-top: 10px;
+}
 .hidden {
     display: none !important;
 }
-
 .key-status-display {
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
@@ -517,10 +500,132 @@ button.danger { background: var(--danger-color); color: white; margin-top: 10px;
     text-align: center;
 }
 
-button.danger { 
-    background: var(--danger-color); 
-    color: white; 
-    margin-top: 10px; 
+.hook-bank-content {
+    max-width: 700px;
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+.modal-subtitle {
+    margin-top: 0.25rem;
+    margin-bottom: 1.5rem;
+}
+.hook-bank-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+.hook-category {
+    margin-bottom: 2rem;
+}
+.hook-category h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+.hook-item {
+    background-color: var(--input-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-family: var(--font-mono);
+}
+.hook-item:hover {
+    border-color: var(--accent-color);
+    transform: translateX(5px);
 }
 
-/* ... */
+/* --- RESPONSIVE DESIGN --- */
+
+/* For Tablets and smaller desktops (e.g., iPad Pro vertical) */
+@media (max-width: 1024px) {
+    body {
+        overflow: auto; /* Allow body to scroll on smaller screens */
+    }
+    .app-container {
+        grid-template-columns: 1fr; /* Stack panels vertically */
+        height: auto;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    .editor-panel, .chat-panel {
+        height: auto;
+        min-height: 80vh; 
+    }
+}
+
+/* For Mobile Phones */
+@media (max-width: 767px) {
+    .app-container {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .editor-panel, .chat-panel {
+        border-radius: 12px;
+    }
+
+    .panel-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .panel-title h1 {
+        font-size: 1.25rem;
+    }
+    .header-action-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .script-wrapper {
+        padding: 1rem;
+    }
+
+    .pre-writing-setup {
+        grid-template-columns: 1fr; /* Stack setup items vertically */
+    }
+
+    textarea {
+        font-size: 0.95rem;
+        min-height: 100px;
+    }
+
+    .chat-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .ai-personality-selector {
+        width: 100%;
+    }
+
+    .header-controls {
+        align-self: flex-end; /* Move icons to the right corner */
+    }
+
+    .chat-history {
+        padding: 1rem;
+    }
+    
+    .chat-message {
+        font-size: 0.9rem;
+        max-width: 95%;
+    }
+
+    .chat-input-area {
+        padding: 0.75rem;
+    }
+
+    /* Make modals take more space */
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
