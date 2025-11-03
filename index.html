@@ -4,72 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ViralScript - AI Script Editor</title>
-
+    
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet">
-
+    
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div class="app-container">
+    <!-- Background Effect -->
+    <div class="aurora-background"></div>
 
-        <!-- ====================================================== -->
-        <!-- ==                  EDITOR PANEL                    == -->
-        <!-- ====================================================== -->
+    <!-- Main Application Container -->
+    <div class="app-container">
+        
+        <!-- Center Panel: The Editor Workspace -->
         <main class="editor-panel">
             <header class="panel-header">
                 <div class="panel-title">
                     <h1>ViralScript 🧪</h1>
                 </div>
-                <button id="copy-script-btn" class="header-action-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Copy Script</span>
-                </button>
+                <div class="header-actions">
+                    <button id="save-script-btn" class="header-action-btn secondary">💾 Save Script</button>
+                    <button id="copy-script-btn" class="header-action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy Script</span>
+                    </button>
+                </div>
             </header>
 
             <div class="script-wrapper">
-                <!-- Hook Section -->
                 <div id="hook-section" class="script-component">
                     <div class="component-header">
                         <h3>🎯 Hook</h3>
                         <button id="hook-bank-btn" class="component-action-btn">💡 Hook Bank</button>
                     </div>
-                    <textarea id="hook-input" placeholder="AI နှင့် စကားပြောပြီး သင်၏ script ကို ဤနေရာတွင် ဖန်တီးပေးပါမည်..."></textarea>
+                    <textarea id="hook-input" placeholder="AI နှင့် စကားပြောပြီး သင်၏ script ကို ဤနေရာတွင် ဖန်တီးပါ..."></textarea>
                 </div>
-
-                <!-- Body Section -->
                 <div id="body-section" class="script-component">
-                    <div class="component-header">
-                        <h3>BODY</h3>
-                    </div>
-                    <textarea id="body-input" placeholder=""></textarea>
+                    <h3>BODY</h3>
+                    <textarea id="body-input"></textarea>
                 </div>
-
-                <!-- CTA Section -->
                 <div id="cta-section" class="script-component">
                      <div class="component-header">
                         <h3>📣 Call to Action</h3>
                         <button id="cta-bank-btn" class="component-action-btn">💡 CTA Bank</button>
                     </div>
-                    <textarea id="cta-input" placeholder=""></textarea>
+                    <textarea id="cta-input"></textarea>
                 </div>
             </div>
         </main>
 
-        <!-- ====================================================== -->
-        <!-- ==                   AI CHAT PANEL                  == -->
-        <!-- ====================================================== -->
+        <!-- Right Panel: The AI Co-Pilot -->
         <aside class="chat-panel">
             <header class="panel-header chat-header">
                 <div class="ai-personality-selector">
-                    <!-- AI Persona selector can be re-enabled later if needed -->
-                    <h2>AI Script Director</h2>
+                    <label for="ai-personality">Coach Persona</label>
+                    <select id="ai-personality" disabled>
+                        <option value="Creative Coach">Creative Coach</option>
+                        <option value="Viral Editor">Viral Editor</option>
+                        <option value="Hook Analyzer">Hook Analyzer</option>
+                    </select>
                 </div>
                 <div class="header-controls">
-                    <button id="clear-chat-btn" class="icon-btn" title="Clear Chat History">
+                    <button id="my-scripts-btn" class="icon-btn" title="My Scripts">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    </button>
+                    <button id="clear-chat-btn" class="icon-btn" title="Clear Chat & New Script">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>
                     <div id="api-status" class="status-light-red" title="API Key မထည့်ရသေးပါ"></div>
@@ -78,9 +81,7 @@
                     </button>
                 </div>
             </header>
-            <div id="ai-chat-history" class="chat-history">
-                <!-- AI and user messages will be dynamically added here -->
-            </div>
+            <div id="ai-chat-history" class="chat-history"></div>
             <div class="chat-input-area">
                 <div class="input-wrapper">
                     <textarea id="chat-input" placeholder="AI ၏ မေးခွန်းကို ဖြေကြားပါ..." rows="1"></textarea>
@@ -92,17 +93,12 @@
         </aside>
     </div>
     
-    <!-- ====================================================== -->
-    <!-- ==                     MODALS                       == -->
-    <!-- ====================================================== -->
-
-    <!-- Settings Modal -->
+    <!-- All Modals -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <button id="close-modal-btn" class="close-btn">&times;</button>
             <h2>Settings</h2>
             <div class="api-key-management">
-                <!-- State 1: For entering a new key -->
                 <div id="api-key-entry-state">
                     <div class="api-key-wrapper">
                         <label for="api-key-input">Google Gemini API Key</label>
@@ -111,7 +107,6 @@
                         <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
                     </div>
                 </div>
-                <!-- State 2: For managing an existing key -->
                 <div id="api-key-manage-state" class="hidden">
                     <div class="api-key-wrapper">
                         <label>Current API Key Status</label>
@@ -125,34 +120,35 @@
             </div>
         </div>
     </div>
-
-    <!-- Hook Bank Modal -->
+    
     <div id="hook-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
             <button id="close-hook-modal-btn" class="close-btn">&times;</button>
             <h2>📘 Viral Hook Bank</h2>
-            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ AI ကို ညွှန်ကြားပေးပါလိမ့်မယ်။</p>
-            <div id="hook-bank-list" class="hook-bank-list">
-                <!-- Hooks will be dynamically loaded here -->
-            </div>
+            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ chat input ထဲရောက်သွားပါမယ်။</p>
+            <div id="hook-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
-
-    <!-- CTA Bank Modal -->
+    
     <div id="cta-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
             <button id="close-cta-modal-btn" class="close-btn">&times;</button>
             <h2>📣 CTA Bank</h2>
             <p class="modal-subtitle">သင့်ရည်မှန်းချက်နဲ့ကိုက်ညီမယ့် CTA ကို ရွေးချယ်အသုံးပြုပါ။</p>
-            <div id="cta-bank-list" class="hook-bank-list">
-                <!-- CTAs will be dynamically loaded here -->
-            </div>
+            <div id="cta-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
     
-    <!-- ====================================================== -->
-    <!-- ==                  SCRIPTS                       == -->
-    <!-- ====================================================== -->
+    <div id="script-vault-modal" class="modal">
+        <div class="modal-content hook-bank-content">
+            <button id="close-vault-modal-btn" class="close-btn">&times;</button>
+            <h2>💾 My Scripts</h2>
+            <p class="modal-subtitle">သင်သိမ်းဆည်းထားသော script များကို ဤနေရာတွင် ကြည့်ရှုနိုင်၊ ပြန်ဖွင့်နိုင်ပါသည်။</p>
+            <div id="script-vault-list" class="script-vault-list"></div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="assets/js/storage.js"></script>
     <script src="assets/js/ai.js"></script>

@@ -7,13 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const bodyInput = document.getElementById('body-input');
     const ctaInput = document.getElementById('cta-input');
     const copyScriptBtn = document.getElementById('copy-script-btn');
+    const saveScriptBtn = document.getElementById('save-script-btn');
 
     // Chat Panel Elements
     const chatHistoryEl = document.getElementById('ai-chat-history');
     const chatInput = document.getElementById('chat-input');
     const sendChatBtn = document.getElementById('send-chat-btn');
-    const clearChatBtn = document.getElementById('clear-chat-btn'); // 👈 ADD THIS LINE
-
+    const clearChatBtn = document.getElementById('clear-chat-btn');
     
     // Inspiration Bank Elements
     const hookBankBtn = document.getElementById('hook-bank-btn');
@@ -25,10 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCtaModalBtn = document.getElementById('close-cta-modal-btn');
     const ctaBankList = document.getElementById('cta-bank-list');
 
-    // Settings Modal Elements
+    // Settings & Script Vault Modal Elements
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
+    const myScriptsBtn = document.getElementById('my-scripts-btn');
+    const scriptVaultModal = document.getElementById('script-vault-modal');
+    const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
+    const scriptVaultList = document.getElementById('script-vault-list');
+    
+    // API Key Management Elements
     const apiKeyInput = document.getElementById('api-key-input');
     const saveApiKeyBtn = document.getElementById('save-api-key-btn');
     const deleteApiKeyBtn = document.getElementById('delete-api-key-btn');
@@ -38,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === 2. Application State Management ===
     let appState = 'DISCOVERY'; // 'DISCOVERY', 'GENERATING', 'EDITING', 'FINAL_CHECK'
-    let chatHistory = []; // Stores the conversation for the AI
-    let isAwaitingResponse = false; // Prevents spamming the send button
+    let chatHistory = [];
+    let isAwaitingResponse = false;
 
     // === 3. Initialization ===
     function initialize() {
@@ -81,22 +87,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- State Machine ---
         let aiResponseText;
-        if (appState === 'EDITING' && (userMessageText.toLowerCase().includes('အဆင်သင့်ဖြစ်ပြီ') || userMessageText.toLowerCase().includes('final check'))) {
-            appState = 'FINAL_CHECK';
-        }
 
-        if (appState === 'DISCOVERY') {
-            aiResponseText = await generateChatResponse(chatHistory);
-            if (aiResponseText) {
-                if (aiResponseText.includes("[PROCEED_TO_GENERATION]")) {
-                    await generateFinalScript();
-                    aiResponseText = null; // Prevent double messaging
+        // URL Detection gets highest priority
+        const urlRegex = /^(https?:\/\/)/i;
+        if (urlRegex.test(userMessageText)) {
+            aiResponseText = await deconstructViralVideo(userMessageText);
+        } else {
+            const analysisTriggers = ["script သုံးသပ်ပေး", "full analysis", "အားလုံးကိုစစ်ပေး", "review script"];
+            const wantsFullAnalysis = analysisTriggers.some(trigger => userMessageText.toLowerCase().includes(trigger));
+            
+            if (wantsFullAnalysis && (appState === 'EDITING' || appState === 'FINAL_CHECK')) {
+                aiResponseText = await handleFullScriptAnalysis();
+            } else if (appState === 'DISCOVERY') {
+                const discoveryResponse = await generateChatResponse(chatHistory);
+                if (discoveryResponse) {
+                    if (discoveryResponse.includes("[PROCEED_TO_GENERATION]")) {
+                        await generateFinalScript();
+                        aiResponseText = null; 
+                    } else {
+                        aiResponseText = discoveryResponse;
+                    }
                 }
+            } else if (appState === 'EDITING') {
+                if (userMessageText.toLowerCase().includes('final check')) {
+                    appState = 'FINAL_CHECK';
+                    aiResponseText = await handleFinalCheck();
+                } else {
+                    aiResponseText = await handleEditRequest(userMessageText);
+                }
+            } else if (appState === 'FINAL_CHECK') {
+                aiResponseText = await handleFinalCheck();
             }
-        } else if (appState === 'EDITING') {
-            aiResponseText = await handleEditRequest(userMessageText);
-        } else if (appState === 'FINAL_CHECK') {
-            aiResponseText = await handleFinalCheck();
         }
 
         if (aiResponseText) {
@@ -150,7 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `တောင်းပန်ပါသည်။ ${partToEdit} ကို ပြင်ဆင်ရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။`;
             }
         } else {
-            return "ဘယ်အပိုင်းကို ပြင်လိုသည်ဖြစ်ကြောင်း တိတိကျကျ ပြောပေးပါ။ (ဥပမာ: 'Hook ကို ပြင်ပေးပါ')";
+             // If no specific part is mentioned, treat it as a continuing conversation
+            const aiResponse = await generateChatResponse(chatHistory);
+            return aiResponse;
         }
     }
 
@@ -160,6 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const finalCheckText = await performFinalCheck(fullScript);
         addMessageToChat({ role: 'model', text: "Script အသစ်တစ်ခု ထပ်မံဖန်တီးလိုပါက 'new script' ဟု ရိုက်ထည့်နိုင်ပါသည်။" });
         return finalCheckText;
+    }
+
+    async function handleFullScriptAnalysis() {
+        appState = 'ANALYZING';
+        addMessageToChat({ role: 'model', text: "ကောင်းပါပြီ။ Script တစ်ခုလုံးရဲ့ Cohesion ကို သုံးသပ်ပါမယ်။" });
+        const fullScript = `[Hook]\n${hookInput.value}\n\n[Body]\n${bodyInput.value}\n\n[CTA]\n${ctaInput.value}`;
+        
+        const analysisReport = await performFullAnalysis(fullScript);
+        
+        appState = 'EDITING';
+        return analysisReport;
     }
 
     // === 5. UI Helper Functions ===
@@ -198,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isAwaitingResponse = isLoading;
         chatInput.disabled = isLoading;
         sendChatBtn.disabled = isLoading;
-        chatInput.placeholder = isLoading ? "AI စဉ်းစားနေပါသည်..." : "AI ၏ မေးခွန်းကို ဖြေကြားပါ...";
+        chatInput.placeholder = isLoading ? "AI စဉ်းစားနေပါသည်..." : "AI နှင့် စကားပြောပါ...";
     }
 
     function setInputsReadOnly(isReadOnly) {
@@ -211,6 +245,29 @@ document.addEventListener('DOMContentLoaded', () => {
         hookInput.value = '';
         bodyInput.value = '';
         ctaInput.value = '';
+    }
+
+    function openScriptVault() {
+        const scripts = getSavedScripts();
+        scriptVaultList.innerHTML = '';
+
+        if (scripts.length === 0) {
+            scriptVaultList.innerHTML = '<p class="empty-vault-message">သင်သိမ်းဆည်းထားသော script များ မရှိသေးပါ။</p>';
+        } else {
+            scripts.forEach(script => {
+                const item = document.createElement('div');
+                item.className = 'vault-item';
+                item.innerHTML = `
+                    <span class="vault-item-title">${script.title}</span>
+                    <div class="vault-item-actions">
+                        <button class="load-btn" data-id="${script.id}">Load</button>
+                        <button class="delete-btn danger" data-id="${script.id}">Delete</button>
+                    </div>
+                `;
+                scriptVaultList.appendChild(item);
+            });
+        }
+        scriptVaultModal.style.display = 'block';
     }
     
     function updateApiStatus(isKeySet) {
@@ -232,20 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-        // 👇 ADD THIS ENTIRE BLOCK 👇
-    // Clear Chat Button
     clearChatBtn.addEventListener('click', () => {
-        // 1. Ask for user confirmation because this is a destructive action.
         if (confirm('Chat history တစ်ခုလုံးကို ဖျက်ပြီး အစကပြန်စမှာလား?')) {
-            // 2. Clear the saved history from the browser's local storage.
             deleteChatHistory(); 
-            
-            // 3. Call startDiscovery() to completely reset the application state.
-            // This handles clearing the UI, the chatHistory array, and asking the first question.
             startDiscovery();
         }
     });
-
 
     saveApiKeyBtn.addEventListener('click', () => {
         const key = apiKeyInput.value.trim();
@@ -275,20 +324,55 @@ document.addEventListener('DOMContentLoaded', () => {
     closeHookModalBtn.addEventListener('click', () => hookBankModal.style.display = 'none');
     ctaBankBtn.addEventListener('click', () => ctaBankModal.style.display = 'block');
     closeCtaModalBtn.addEventListener('click', () => ctaBankModal.style.display = 'none');
+    myScriptsBtn.addEventListener('click', openScriptVault);
+    closeVaultModalBtn.addEventListener('click', () => scriptVaultModal.style.display = 'none');
 
     hookBankList.addEventListener('click', (e) => {
         if (e.target.classList.contains('hook-item')) {
-            chatInput.value = `"${e.target.textContent}" ဆိုတဲ့ Hook အမျိုးအစားကို သုံးချင်ပါတယ်.`;
-            handleSendMessage();
+            chatInput.value = e.target.textContent;
+            chatInput.focus();
             hookBankModal.style.display = 'none';
         }
     });
 
     ctaBankList.addEventListener('click', (e) => {
         if (e.target.classList.contains('hook-item')) {
-            chatInput.value = `"${e.target.textContent}" ဆိုတဲ့ CTA ကို သုံးချင်ပါတယ်.`;
-            handleSendMessage();
+            chatInput.value = e.target.textContent;
+            chatInput.focus();
             ctaBankModal.style.display = 'none';
+        }
+    });
+
+    scriptVaultList.addEventListener('click', (e) => {
+        const target = e.target;
+        if (!target.hasAttribute('data-id')) return;
+        const scriptId = parseInt(target.getAttribute('data-id'));
+
+        if (target.classList.contains('load-btn')) {
+            const scripts = getSavedScripts();
+            const scriptToLoad = scripts.find(s => s.id === scriptId);
+            if (scriptToLoad) {
+                hookInput.value = scriptToLoad.hook;
+                bodyInput.value = scriptToLoad.body;
+                ctaInput.value = scriptToLoad.cta;
+                scriptVaultModal.style.display = 'none';
+                const loadMessage = `Script "${scriptToLoad.title}" ကို ပြန်လည်ဖွင့်ပြီးပါပြီ။ သုံးသပ်ခိုင်းနိုင်ပါပြီ သို့မဟုတ် ပြင်ဆင်မှုများ ဆက်လုပ်နိုင်ပါသည်။`;
+                addMessageToChat({role: 'model', text: loadMessage});
+                chatHistory.push({ role: 'model', parts: [{ text: loadMessage }] });
+                appState = 'EDITING';
+            }
+        }
+
+        if (target.classList.contains('delete-btn')) {
+            if (confirm("ဤ script ကို တကယ်ဖျက်မှာလား?")) {
+                if (deleteScript(scriptId)) {
+                    const itemToRemove = target.closest('.vault-item');
+                    if(itemToRemove) itemToRemove.remove();
+                    if (scriptVaultList.children.length === 0) {
+                         scriptVaultList.innerHTML = '<p class="empty-vault-message">သင်သိမ်းဆည်းထားသော script များ မရှိသေးပါ။</p>';
+                    }
+                }
+            }
         }
     });
 
@@ -298,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnSpan = copyScriptBtn.querySelector('span');
             const originalText = btnSpan.textContent;
             btnSpan.textContent = 'Copied!';
-            copyScriptBtn.style.backgroundColor = '#1dd1a1'; // Green feedback
+            copyScriptBtn.style.backgroundColor = '#1dd1a1';
             setTimeout(() => {
                 btnSpan.textContent = originalText;
                 copyScriptBtn.style.backgroundColor = 'var(--accent-color)';
@@ -309,11 +393,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Close modals if clicked outside
     window.addEventListener('click', (event) => {
         if (event.target == settingsModal) settingsModal.style.display = "none";
         if (event.target == hookBankModal) hookBankModal.style.display = "none";
         if (event.target == ctaBankModal) ctaBankModal.style.display = "none";
+        if (event.target == scriptVaultModal) scriptVaultModal.style.display = "none";
     });
 
     // === 7. Start The Application ===

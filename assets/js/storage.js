@@ -1,125 +1,140 @@
-/**
- * ==========================================================================
- * ViralScript - Browser Storage Manager
- * ==========================================================================
- * This file handles all interactions with the browser's localStorage.
- * It is responsible for:
- * 1. Securely saving, retrieving, and deleting the user's Gemini API key.
- * 2. Persisting and retrieving the chat conversation history.
- *
- * All data is stored exclusively on the user's device and is never sent
- * to any server.
- */
+// /assets/js/storage.js
+// This file manages all data stored in the user's browser (localStorage).
 
-// ==========================================================================
-//   1. API Key Management Functions
-// ==========================================================================
+// === 1. API KEY STORAGE ===
 
 /**
- * Saves the provided API key to localStorage after Base64 encoding for
- * light obfuscation. This prevents the key from being plainly visible
- * in browser developer tools.
- * @param {string} key - The user's Google Gemini API key.
+ * Saves the user's Google Gemini API Key to localStorage.
+ * The key is encoded in Base64 for simple obfuscation (not encryption).
+ * @param {string} key - The API key to save.
  */
 function saveApiKey(key) {
-    if (!key || typeof key !== 'string') {
-        console.error("Save API Key Error: Invalid key provided.");
+    if (!key) {
+        console.error("Attempted to save an empty API key.");
         return;
     }
     try {
-        // btoa() creates a Base64-encoded ASCII string from a string of binary data.
-        const encodedKey = btoa(key);
-        localStorage.setItem("gemini_api_key", encodedKey);
-        console.log("API Key has been saved to localStorage.");
-    } catch (error) {
-        console.error("Failed to save API Key to localStorage:", error);
+        localStorage.setItem("gemini_api_key", btoa(key));
+    } catch (e) {
+        console.error("Failed to save API key to localStorage:", e);
     }
 }
 
 /**
- * Retrieves the API key from localStorage and decodes it from Base64.
- * @returns {string|null} The decoded API key if it exists, otherwise null.
+ * Retrieves the decoded Google Gemini API Key from localStorage.
+ * @returns {string|null} The decoded API key, or null if it doesn't exist.
  */
 function getApiKey() {
     try {
         const encodedKey = localStorage.getItem("gemini_api_key");
-        if (encodedKey) {
-            // atob() decodes a Base64-encoded string.
-            return atob(encodedKey);
-        }
-        return null;
-    } catch (error) {
-        console.error("Failed to retrieve API Key from localStorage:", error);
-        // If decoding fails (e.g., corrupted data), remove the bad item.
-        localStorage.removeItem("gemini_api_key");
+        return encodedKey ? atob(encodedKey) : null;
+    } catch (e) {
+        console.error("Failed to retrieve or decode API key from localStorage:", e);
         return null;
     }
 }
 
 /**
- * Deletes the API key from localStorage entirely.
+ * Deletes the user's API Key from localStorage.
  */
 function deleteApiKey() {
     try {
         localStorage.removeItem("gemini_api_key");
-        console.log("API Key has been deleted from localStorage.");
-    } catch (error) {
-        console.error("Failed to delete API Key from localStorage:", error);
+    } catch (e) {
+        console.error("Failed to delete API key from localStorage:", e);
     }
 }
 
 
-// ==========================================================================
-//   2. Chat History Management Functions
-// ==========================================================================
+// === 2. CHAT HISTORY STORAGE ===
 
 /**
- * Saves the entire chat history array to localStorage after converting
- * it to a JSON string.
- * @param {Array<Object>} history - The array of chat message objects.
+ * Saves the current chat conversation history to localStorage.
+ * @param {Array<object>} history - The chat history array to save.
  */
 function saveChatHistory(history) {
-    if (!Array.isArray(history)) {
-        console.error("Save Chat History Error: Provided history is not an array.");
-        return;
-    }
     try {
-        const historyJson = JSON.stringify(history);
-        localStorage.setItem("viralscript_chat_history", historyJson);
-    } catch (error) {
-        console.error("Failed to save chat history to localStorage:", error);
+        localStorage.setItem("viralscript_chat_history", JSON.stringify(history));
+    } catch (e) {
+        console.error("Failed to save chat history to localStorage:", e);
+        // This can happen if the history is too large for localStorage.
     }
 }
 
 /**
- * Retrieves the chat history from localStorage and parses it back into
- * a JavaScript array.
- * @returns {Array<Object>} The array of chat message objects, or an empty array if none exists or an error occurs.
+ * Retrieves the chat conversation history from localStorage.
+ * @returns {Array<object>} The chat history array, or an empty array if none exists or an error occurs.
  */
 function getChatHistory() {
     try {
         const historyJson = localStorage.getItem("viralscript_chat_history");
-        if (historyJson) {
-            return JSON.parse(historyJson);
-        }
-        return []; // Return an empty array if no history is found
-    } catch (error) {
-        console.error("Failed to retrieve chat history from localStorage:", error);
-        // If parsing fails (e.g., corrupted data), remove the bad item.
-        localStorage.removeItem("viralscript_chat_history");
+        return historyJson ? JSON.parse(historyJson) : [];
+    } catch (e) {
+        console.error("Failed to retrieve or parse chat history from localStorage:", e);
         return [];
     }
 }
 
 /**
- * Deletes the entire chat history from localStorage. This is used by the
- * "Clear Chat" feature.
+ * Deletes the chat history from localStorage.
  */
 function deleteChatHistory() {
     try {
         localStorage.removeItem("viralscript_chat_history");
-        console.log("Chat history has been deleted from localStorage.");
-    } catch (error) {
-        console.error("Failed to delete chat history from localStorage:", error);
+    } catch (e) {
+        console.error("Failed to delete chat history from localStorage:", e);
+    }
+}
+
+
+// === 3. SCRIPT VAULT STORAGE ===
+
+/**
+ * Retrieves all saved scripts from localStorage.
+ * @returns {Array<object>} An array of script objects.
+ */
+function getSavedScripts() {
+    try {
+        const scriptsJson = localStorage.getItem('viralscript_vault');
+        return scriptsJson ? JSON.parse(scriptsJson) : [];
+    } catch (e) {
+        console.error("Failed to retrieve scripts from localStorage:", e);
+        return [];
+    }
+}
+
+/**
+ * Saves a new script object to the vault in localStorage.
+ * @param {object} scriptObject - The script object to save {id, title, hook, body, cta}.
+ * @returns {boolean} True on success, false on failure.
+ */
+function saveScript(scriptObject) {
+    try {
+        const scripts = getSavedScripts();
+        // Add the new script to the beginning of the array so it appears at the top of the list.
+        scripts.unshift(scriptObject);
+        localStorage.setItem('viralscript_vault', JSON.stringify(scripts));
+        return true;
+    } catch (e) {
+        console.error("Failed to save script to localStorage:", e);
+        return false;
+    }
+}
+
+/**
+ * Deletes a script from the vault by its unique ID.
+ * @param {number} scriptId - The ID (timestamp) of the script to delete.
+ * @returns {boolean} True on success, false on failure.
+ */
+function deleteScript(scriptId) {
+    try {
+        let scripts = getSavedScripts();
+        // Filter out the script with the matching ID.
+        scripts = scripts.filter(script => script.id !== scriptId);
+        localStorage.setItem('viralscript_vault', JSON.stringify(scripts));
+        return true;
+    } catch (e) {
+        console.error("Failed to delete script from localStorage:", e);
+        return false;
     }
 }
