@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hookBankList.addEventListener('click', (e) => {
         if (e.target.classList.contains('hook-item')) {
-            chatInput.value = `"${e.target.textContent}" 라는 hook 유형을 사용하고 싶습니다.`;
+            chatInput.value = `"${e.target.textContent}" ဆိုတဲ့ Hook အမျိုးအစားကို သုံးချင်ပါတယ်.`;
             handleSendMessage();
             hookBankModal.style.display = 'none';
         }
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ctaBankList.addEventListener('click', (e) => {
         if (e.target.classList.contains('hook-item')) {
-            chatInput.value = `"${e.target.textContent}" 와 같은 CTA를 사용하고 싶습니다.`;
+            chatInput.value = `"${e.target.textContent}" ဆိုတဲ့ CTA ကို သုံးချင်ပါတယ်.`;
             handleSendMessage();
             ctaBankModal.style.display = 'none';
         }
