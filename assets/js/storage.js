@@ -1,148 +1,125 @@
-// /assets/js/storage.js
-// This file manages all data persistence for the application using the browser's localStorage.
+/**
+ * ==========================================================================
+ * ViralScript - Browser Storage Manager
+ * ==========================================================================
+ * This file handles all interactions with the browser's localStorage.
+ * It is responsible for:
+ * 1. Securely saving, retrieving, and deleting the user's Gemini API key.
+ * 2. Persisting and retrieving the chat conversation history.
+ *
+ * All data is stored exclusively on the user's device and is never sent
+ * to any server.
+ */
 
-// === 1. API KEY STORAGE ===
-// Manages the user's Google Gemini API Key.
-// The key is encoded in Base64 for light obfuscation to prevent accidental viewing.
-
-const API_KEY_STORAGE_KEY = "viralscript_gemini_api_key";
+// ==========================================================================
+//   1. API Key Management Functions
+// ==========================================================================
 
 /**
- * Saves the user's API key to localStorage after encoding it.
- * @param {string} key - The raw API key to be saved.
+ * Saves the provided API key to localStorage after Base64 encoding for
+ * light obfuscation. This prevents the key from being plainly visible
+ * in browser developer tools.
+ * @param {string} key - The user's Google Gemini API key.
  */
 function saveApiKey(key) {
     if (!key || typeof key !== 'string') {
-        console.error("Attempted to save an invalid API key.");
+        console.error("Save API Key Error: Invalid key provided.");
         return;
     }
     try {
-        const encodedKey = btoa(key); // Encode to Base64
-        localStorage.setItem(API_KEY_STORAGE_KEY, encodedKey);
+        // btoa() creates a Base64-encoded ASCII string from a string of binary data.
+        const encodedKey = btoa(key);
+        localStorage.setItem("gemini_api_key", encodedKey);
+        console.log("API Key has been saved to localStorage.");
     } catch (error) {
         console.error("Failed to save API Key to localStorage:", error);
     }
 }
 
 /**
- * Retrieves and decodes the user's API key from localStorage.
- * @returns {string|null} The decoded API key, or null if it's not found.
+ * Retrieves the API key from localStorage and decodes it from Base64.
+ * @returns {string|null} The decoded API key if it exists, otherwise null.
  */
 function getApiKey() {
     try {
-        const encodedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+        const encodedKey = localStorage.getItem("gemini_api_key");
         if (encodedKey) {
-            return atob(encodedKey); // Decode from Base64
+            // atob() decodes a Base64-encoded string.
+            return atob(encodedKey);
         }
         return null;
     } catch (error) {
         console.error("Failed to retrieve API Key from localStorage:", error);
-        // If decoding fails (e.g., corrupted data), clear the invalid key.
-        deleteApiKey();
+        // If decoding fails (e.g., corrupted data), remove the bad item.
+        localStorage.removeItem("gemini_api_key");
         return null;
     }
 }
 
 /**
- * Deletes the user's API key from localStorage.
+ * Deletes the API key from localStorage entirely.
  */
 function deleteApiKey() {
     try {
-        localStorage.removeItem(API_KEY_STORAGE_KEY);
+        localStorage.removeItem("gemini_api_key");
+        console.log("API Key has been deleted from localStorage.");
     } catch (error) {
         console.error("Failed to delete API Key from localStorage:", error);
     }
 }
 
 
-// === 2. DRAFTS WORKSPACE STORAGE ===
-// Manages the collection of script drafts. Each draft is an object containing
-// its ID, name, the script content, and the associated chat history.
-
-const DRAFTS_STORAGE_KEY = "viralscript_drafts_workspace";
+// ==========================================================================
+//   2. Chat History Management Functions
+// ==========================================================================
 
 /**
- * Retrieves all script drafts from localStorage.
- * Returns an array of draft objects.
- * @returns {Array<Object>} An array of all saved drafts, or an empty array if none exist.
+ * Saves the entire chat history array to localStorage after converting
+ * it to a JSON string.
+ * @param {Array<Object>} history - The array of chat message objects.
  */
-function getAllDrafts() {
+function saveChatHistory(history) {
+    if (!Array.isArray(history)) {
+        console.error("Save Chat History Error: Provided history is not an array.");
+        return;
+    }
     try {
-        const draftsJson = localStorage.getItem(DRAFTS_STORAGE_KEY);
-        // If data exists, parse it. Otherwise, return an empty array.
-        return draftsJson ? JSON.parse(draftsJson) : [];
+        const historyJson = JSON.stringify(history);
+        localStorage.setItem("viralscript_chat_history", historyJson);
     } catch (error) {
-        console.error("Failed to get all drafts from localStorage:", error);
-        // If parsing fails, it means the data is corrupted. Return an empty array.
+        console.error("Failed to save chat history to localStorage:", error);
+    }
+}
+
+/**
+ * Retrieves the chat history from localStorage and parses it back into
+ * a JavaScript array.
+ * @returns {Array<Object>} The array of chat message objects, or an empty array if none exists or an error occurs.
+ */
+function getChatHistory() {
+    try {
+        const historyJson = localStorage.getItem("viralscript_chat_history");
+        if (historyJson) {
+            return JSON.parse(historyJson);
+        }
+        return []; // Return an empty array if no history is found
+    } catch (error) {
+        console.error("Failed to retrieve chat history from localStorage:", error);
+        // If parsing fails (e.g., corrupted data), remove the bad item.
+        localStorage.removeItem("viralscript_chat_history");
         return [];
     }
 }
 
 /**
- * Saves a single draft object.
- * If a draft with the same ID already exists, it updates it.
- * If not, it adds it as a new draft.
- * @param {Object} draftObject - The draft object to save. Must include an 'id' property.
+ * Deletes the entire chat history from localStorage. This is used by the
+ * "Clear Chat" feature.
  */
-function saveDraft(draftObject) {
-    if (!draftObject || !draftObject.id) {
-        console.error("Attempted to save an invalid draft object.");
-        return;
-    }
+function deleteChatHistory() {
     try {
-        let drafts = getAllDrafts();
-        const existingDraftIndex = drafts.findIndex(d => d.id === draftObject.id);
-
-        if (existingDraftIndex > -1) {
-            // Found an existing draft, so replace it with the updated version.
-            drafts[existingDraftIndex] = draftObject;
-        } else {
-            // No existing draft found, so add this one to the end of the array.
-            drafts.push(draftObject);
-        }
-
-        // Save the entire updated array back to localStorage.
-        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+        localStorage.removeItem("viralscript_chat_history");
+        console.log("Chat history has been deleted from localStorage.");
     } catch (error) {
-        console.error("Failed to save draft to localStorage:", error);
-    }
-}
-
-/**
- * Retrieves a single draft from localStorage by its unique ID.
- * @param {number} draftId - The ID of the draft to retrieve.
- * @returns {Object|null} The found draft object, or null if no draft with that ID exists.
- */
-function getDraftById(draftId) {
-    if (!draftId) {
-        return null;
-    }
-    try {
-        const drafts = getAllDrafts();
-        return drafts.find(d => d.id === draftId) || null;
-    } catch (error) {
-        console.error(`Failed to get draft with ID ${draftId}:`, error);
-        return null;
-    }
-}
-
-/**
- * Deletes a draft from localStorage by its unique ID.
- * @param {number} draftId - The ID of the draft to delete.
- */
-function deleteDraftById(draftId) {
-    if (!draftId) {
-        console.error("Attempted to delete a draft with an invalid ID.");
-        return;
-    }
-    try {
-        let drafts = getAllDrafts();
-        // Create a new array containing all drafts *except* the one with the matching ID.
-        const updatedDrafts = drafts.filter(d => d.id !== draftId);
-        
-        // Save the new, filtered array back to localStorage.
-        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(updatedDrafts));
-    } catch (error) {
-        console.error(`Failed to delete draft with ID ${draftId}:`, error);
+        console.error("Failed to delete chat history from localStorage:", error);
     }
 }

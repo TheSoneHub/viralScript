@@ -3,87 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ViralScript - Creative Workspace</title>
-    
+    <title>ViralScript - AI Script Editor</title>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet">
-    
+
     <!-- Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Left Panel: Drafts & Workspace Management -->
-        <aside class="left-panel">
-            <header class="panel-header">
-                <h2>My Workspace</h2>
-            </header>
-            <div class="panel-content">
-                <button id="new-draft-btn" class="new-draft-btn">+ New Script Idea</button>
-                <h3>📂 My Drafts</h3>
-                <div id="drafts-list" class="drafts-list">
-                    <!-- Drafts will be dynamically loaded here by main.js -->
-                    <!-- Example of a draft item structure:
-                    <div class="draft-item" data-id="12345">
-                        <span>Untitled Script</span>
-                        <button class="delete-draft-btn">&times;</button>
-                    </div>
-                    -->
-                </div>
-            </div>
-        </aside>
 
-        <!-- Center Panel: Editor -->
+        <!-- ====================================================== -->
+        <!-- ==                  EDITOR PANEL                    == -->
+        <!-- ====================================================== -->
         <main class="editor-panel">
             <header class="panel-header">
                 <div class="panel-title">
-                    <h1 id="script-title">Untitled Script</h1>
+                    <h1>ViralScript 🧪</h1>
                 </div>
-                <div class="header-actions">
-                    <button id="save-draft-btn" class="header-action-btn secondary" title="Save current draft">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                        <span>Save</span>
-                    </button>
-                    <button id="copy-script-btn" class="header-action-btn" title="Copy the full script to clipboard">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span>Copy Script</span>
-                    </button>
-                </div>
+                <button id="copy-script-btn" class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy Script</span>
+                </button>
             </header>
+
             <div class="script-wrapper">
+                <!-- Hook Section -->
                 <div id="hook-section" class="script-component">
                     <div class="component-header">
                         <h3>🎯 Hook</h3>
                         <button id="hook-bank-btn" class="component-action-btn">💡 Hook Bank</button>
                     </div>
-                    <textarea id="hook-input" placeholder="AI discovery session ကို စတင်ရန် chat တွင် စကားစပြောပါ..." rows="4"></textarea>
+                    <textarea id="hook-input" placeholder="AI နှင့် စကားပြောပြီး သင်၏ script ကို ဤနေရာတွင် ဖန်တီးပေးပါမည်..."></textarea>
                 </div>
+
+                <!-- Body Section -->
                 <div id="body-section" class="script-component">
-                    <h3>BODY</h3>
-                    <textarea id="body-input" rows="10"></textarea>
-                </div>
-                <div id="cta-section" class="script-component">
                     <div class="component-header">
-                        <h3>📣 Call to Action</h3>
-                        <button id="cta-bank-btn" class="component-action-btn">🚀 CTA Bank</button>
+                        <h3>BODY</h3>
                     </div>
-                    <textarea id="cta-input" rows="3"></textarea>
+                    <textarea id="body-input" placeholder=""></textarea>
+                </div>
+
+                <!-- CTA Section -->
+                <div id="cta-section" class="script-component">
+                     <div class="component-header">
+                        <h3>📣 Call to Action</h3>
+                        <button id="cta-bank-btn" class="component-action-btn">💡 CTA Bank</button>
+                    </div>
+                    <textarea id="cta-input" placeholder=""></textarea>
                 </div>
             </div>
         </main>
 
-        <!-- Right Panel: AI Chat -->
+        <!-- ====================================================== -->
+        <!-- ==                   AI CHAT PANEL                  == -->
+        <!-- ====================================================== -->
         <aside class="chat-panel">
             <header class="panel-header chat-header">
                 <div class="ai-personality-selector">
-                    <label for="ai-personality">Coach Persona</label>
-                    <select id="ai-personality">
-                        <option value="Creative Coach">Creative Coach</option>
-                        <option value="Viral Editor">Viral Editor</option>
-                        <option value="Hook Analyzer">Hook Analyzer</option>
-                    </select>
+                    <!-- AI Persona selector can be re-enabled later if needed -->
+                    <h2>AI Script Director</h2>
                 </div>
                 <div class="header-controls">
                     <button id="clear-chat-btn" class="icon-btn" title="Clear Chat History">
@@ -96,7 +79,7 @@
                 </div>
             </header>
             <div id="ai-chat-history" class="chat-history">
-                <!-- AI and user messages will be dynamically loaded here by main.js -->
+                <!-- AI and user messages will be dynamically added here -->
             </div>
             <div class="chat-input-area">
                 <div class="input-wrapper">
@@ -109,14 +92,17 @@
         </aside>
     </div>
     
-    <!-- === MODALS === -->
-    
+    <!-- ====================================================== -->
+    <!-- ==                     MODALS                       == -->
+    <!-- ====================================================== -->
+
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <button id="close-modal-btn" class="close-btn">&times;</button>
             <h2>Settings</h2>
             <div class="api-key-management">
+                <!-- State 1: For entering a new key -->
                 <div id="api-key-entry-state">
                     <div class="api-key-wrapper">
                         <label for="api-key-input">Google Gemini API Key</label>
@@ -125,12 +111,15 @@
                         <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
                     </div>
                 </div>
+                <!-- State 2: For managing an existing key -->
                 <div id="api-key-manage-state" class="hidden">
                     <div class="api-key-wrapper">
                         <label>Current API Key Status</label>
-                        <div class="key-status-display"><span>API Key ထည့်သွင်းပြီးဖြစ်ပါသည်။</span></div>
+                        <div class="key-status-display">
+                            <span>API Key ထည့်သွင်းပြီးဖြစ်ပါသည်။</span>
+                        </div>
                         <button id="delete-api-key-btn" class="danger">Key ကို ဖျက်မည်</button>
-                        <p class="notice">Key အသစ်ပြောင်းထည့်လိုပါက လက်ရှိ Key ကို အရင်ဖျက်ပါ။</p>
+                         <p class="notice">Key အသစ်ပြောင်းထည့်လိုပါက လက်ရှိ Key ကို အရင်ဖျက်ပါ။</p>
                     </div>
                 </div>
             </div>
@@ -141,10 +130,10 @@
     <div id="hook-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
             <button id="close-hook-modal-btn" class="close-btn">&times;</button>
-            <h2>💡 Viral Hook Bank</h2>
-            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ chat ထဲရောက်သွားပါမယ်။</p>
+            <h2>📘 Viral Hook Bank</h2>
+            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ AI ကို ညွှန်ကြားပေးပါလိမ့်မယ်။</p>
             <div id="hook-bank-list" class="hook-bank-list">
-                <!-- Hooks will be dynamically loaded here by main.js -->
+                <!-- Hooks will be dynamically loaded here -->
             </div>
         </div>
     </div>
@@ -153,15 +142,17 @@
     <div id="cta-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
             <button id="close-cta-modal-btn" class="close-btn">&times;</button>
-            <h2>🚀 Call to Action Bank</h2>
-            <p class="modal-subtitle">သင်၏ ရည်မှန်းချက်နှင့် ကိုက်ညီမည့် CTA ကို ရွေးချယ်ပါ။</p>
+            <h2>📣 CTA Bank</h2>
+            <p class="modal-subtitle">သင့်ရည်မှန်းချက်နဲ့ကိုက်ညီမယ့် CTA ကို ရွေးချယ်အသုံးပြုပါ။</p>
             <div id="cta-bank-list" class="hook-bank-list">
-                <!-- CTAs will be loaded here by main.js -->
+                <!-- CTAs will be dynamically loaded here -->
             </div>
         </div>
     </div>
     
-    <!-- === SCRIPTS === -->
+    <!-- ====================================================== -->
+    <!-- ==                  SCRIPTS                       == -->
+    <!-- ====================================================== -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="assets/js/storage.js"></script>
     <script src="assets/js/ai.js"></script>

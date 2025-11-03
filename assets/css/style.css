@@ -1,21 +1,22 @@
-/* === ROOT VARIABLES: THE APP'S DESIGN SYSTEM === */
+/* ==========================================================================
+   1. Root Variables & Global Styles
+   ========================================================================== */
 :root {
     --bg-color: #111214;
     --panel-bg: #1A1B1E;
     --border-color: #303134;
-    --input-bg: rgba(0, 0, 0, 0.2);
+    --input-bg: #252629;
     --text-primary: #E4E4E7;
     --text-secondary: #9A9A9A;
     --accent-color: #3872FF;
     --accent-glow: rgba(56, 114, 255, 0.5);
     --danger-color: #E5484D;
     --user-msg-bg: #2A2F3D;
-    --ai-msg-bg: rgba(30, 31, 34, 0.8);
+    --ai-msg-bg: #252629;
     --font-primary: 'Inter', sans-serif;
     --font-mono: 'Roboto Mono', monospace;
 }
 
-/* === GLOBAL STYLES & RESETS === */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -32,18 +33,19 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* === MAIN APP LAYOUT === */
+/* ==========================================================================
+   2. Main App Layout & Panels
+   ========================================================================== */
 .app-container {
     display: grid;
-    grid-template-columns: 280px 1.4fr 1fr;
+    grid-template-columns: 1.2fr 1fr; 
     width: 100%;
     height: 100%;
     gap: 1.5rem;
     padding: 1.5rem;
 }
 
-/* === SHARED PANEL STYLES === */
-.left-panel, .editor-panel, .chat-panel {
+.editor-panel, .chat-panel {
     background-color: var(--panel-bg);
     border: 1px solid var(--border-color);
     border-radius: 16px;
@@ -61,111 +63,145 @@ body {
     flex-shrink: 0;
 }
 
-.panel-header h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.panel-content {
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-/* === LEFT PANEL: WORKSPACE & DRAFTS === */
-.left-panel .panel-content {
-    padding: 1rem;
-}
-
-.new-draft-btn {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 1.5rem;
-    transition: background-color 0.2s ease;
-}
-.new-draft-btn:hover {
-    background-color: #4D83FF;
-}
-
-.left-panel h3 {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.75rem;
-    padding: 0 0.5rem;
-}
-
-.drafts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.draft-item {
-    padding: 0.75rem 1rem;
-    background-color: var(--input-bg);
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-}
-.draft-item:hover {
-    background-color: var(--border-color);
-}
-.draft-item.active {
-    background-color: var(--user-msg-bg);
-    border-color: var(--accent-color);
-    color: white;
-    font-weight: 500;
-}
-
-.delete-draft-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.2rem;
-    cursor: pointer;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
-    text-align: center;
-    opacity: 0.5;
-    transition: all 0.2s ease;
-}
-.draft-item:hover .delete-draft-btn {
-    opacity: 1;
-}
-.delete-draft-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--danger-color);
-}
-
-
-/* === CENTER PANEL: EDITOR === */
-#script-title {
-    margin: 0;
+.panel-title h1 {
     font-size: 1.5rem;
     font-weight: 600;
 }
 
-.header-actions {
+/* ==========================================================================
+   3. Editor Panel Components
+   ========================================================================== */
+.script-wrapper {
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.script-component {
+    margin-bottom: 1.5rem;
+}
+
+.component-header {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.component-header h3 {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+textarea {
+    width: 100%;
+    min-height: 120px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    resize: vertical;
+    transition: all 0.2s ease-in-out;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ==========================================================================
+   4. AI Chat Panel Components
+   ========================================================================== */
+.chat-header {
+    gap: 1rem;
+}
+
+.chat-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
+.chat-history {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.chat-message {
+    padding: 0.8rem 1.2rem;
+    border-radius: 16px;
+    max-width: 90%;
+    line-height: 1.6;
+    word-wrap: break-word;
+}
+
+.user-message {
+    background-color: var(--user-msg-bg);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.ai-message {
+    background-color: var(--ai-msg-bg);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+/* AI message content styling */
+.ai-message p { margin-bottom: 0.75em; }
+.ai-message p:last-child { margin-bottom: 0; }
+.ai-message ul, .ai-message ol { padding-left: 20px; margin-bottom: 0.75em; }
+.ai-message li { margin-bottom: 0.25em; }
+.ai-message strong { color: var(--text-primary); font-weight: 600; }
+.ai-message code { 
+    background-color: rgba(0,0,0,0.3); 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+}
+
+.chat-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+#chat-input {
+    flex-grow: 1;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    min-height: 48px;
+    max-height: 150px;
+    font-family: var(--font-primary);
+}
+
+#chat-input:disabled {
+    background-color: #333;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   5. Buttons & Interactive Elements
+   ========================================================================== */
 .header-action-btn {
     display: flex;
     align-items: center;
@@ -179,38 +215,9 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
+
 .header-action-btn:hover {
     background-color: #4D83FF;
-}
-.header-action-btn.secondary {
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-}
-.header-action-btn.secondary:hover {
-    background-color: var(--border-color);
-}
-
-
-.script-wrapper {
-    overflow-y: auto;
-    padding: 1.5rem;
-}
-
-.script-component {
-    margin-bottom: 1.5rem;
-}
-
-.script-component h3 {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.script-component .component-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
 }
 
 .component-action-btn {
@@ -223,77 +230,11 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
 }
+
 .component-action-btn:hover {
     background-color: var(--border-color);
     color: var(--text-primary);
 }
-
-textarea {
-    width: 100%;
-    background-color: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    resize: vertical;
-    transition: all 0.2s ease-in-out;
-}
-textarea:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-
-/* === RIGHT PANEL: AI CHAT === */
-.chat-header {
-    gap: 1rem;
-}
-
-.ai-personality-selector {
-    flex-grow: 1;
-}
-
-.ai-personality-selector label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    display: block;
-    margin-bottom: 4px;
-}
-
-.ai-personality-selector select {
-    width: 100%;
-    background-color: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239A9A9A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0 center;
-    background-size: 1em;
-    cursor: pointer;
-}
-
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.status-light-red, .status-light-green {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-}
-.status-light-red { background-color: var(--danger-color); }
-.status-light-green { background-color: #2ED573; box-shadow: 0 0 8px #2ED573;}
 
 .icon-btn {
     background-color: transparent;
@@ -305,63 +246,17 @@ textarea:focus {
     display: flex;
     transition: all 0.2s ease-in-out;
 }
+
 .icon-btn:hover {
     color: var(--text-primary);
     background-color: rgba(255, 255, 255, 0.1);
 }
+
 #clear-chat-btn:hover {
     color: var(--danger-color);
     background-color: rgba(229, 72, 77, 0.1);
 }
 
-.chat-history {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-.chat-message {
-    padding: 0.8rem 1.2rem;
-    border-radius: 16px;
-    max-width: 90%;
-    line-height: 1.6;
-    word-wrap: break-word;
-}
-.chat-message p:last-child { margin-bottom: 0; }
-.chat-message ul, .chat-message ol { padding-left: 20px; }
-.chat-message strong { color: var(--text-primary); font-weight: 600; }
-.user-message {
-    background-color: var(--user-msg-bg);
-    align-self: flex-end;
-    border-bottom-right-radius: 4px;
-}
-.ai-message {
-    background-color: var(--ai-msg-bg);
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-}
-
-.chat-input-area {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--border-color);
-    background-color: rgba(0,0,0,0.2);
-}
-.input-wrapper {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-end;
-}
-#chat-input {
-    flex-grow: 1;
-    border: 1px solid var(--border-color);
-    background-color: var(--input-bg);
-    min-height: 44px;
-    max-height: 150px;
-    font-family: var(--font-primary);
-    border-radius: 12px;
-}
 #send-chat-btn {
     background-color: var(--accent-color);
     color: white;
@@ -369,11 +264,19 @@ textarea:focus {
     height: 44px;
     border-radius: 12px;
 }
+
 #send-chat-btn:hover {
     background-color: #4D83FF;
 }
 
-/* === MODALS === */
+#send-chat-btn:disabled {
+    background-color: var(--border-color);
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   6. Modals (Settings, Hook Bank, CTA Bank)
+   ========================================================================== */
 .modal {
     display: none;
     position: fixed;
@@ -386,7 +289,6 @@ textarea:focus {
     background-color: rgba(0,0,0,0.7);
     animation: fadeIn 0.3s ease;
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-content {
     background-color: var(--panel-bg);
@@ -399,9 +301,9 @@ textarea:focus {
     position: relative;
     animation: slideIn 0.3s ease;
 }
-@keyframes slideIn { from { transform: translateY(-50px); } to { transform: translateY(0); } }
 
 .close-btn {
+    position: absolute;
     top: 1rem;
     right: 1.5rem;
     color: #aaa;
@@ -411,58 +313,36 @@ textarea:focus {
     border: none;
     background: none;
 }
-.close-btn:hover { color: white; }
 
-/* Settings Modal Specifics */
-.api-key-wrapper label { font-size: 0.9rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;}
-.api-key-wrapper input { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-.api-key-wrapper .notice { font-size: 0.75rem; color: var(--text-secondary); margin-top: 10px; }
-.key-status-display {
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    color: var(--text-secondary);
-    text-align: center;
-}
-.modal-content button {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    background: var(--accent-color);
+.close-btn:hover {
     color: white;
 }
-.modal-content button.danger {
-    background: var(--danger-color);
-    margin-top: 10px;
-}
-.hidden { display: none !important; }
 
-/* Hook/CTA Bank Modal Specifics */
+/* Hook & CTA Bank Modal Specifics */
 .hook-bank-content {
     max-width: 700px;
     height: 70vh;
     display: flex;
     flex-direction: column;
 }
+
 .modal-subtitle {
     color: var(--text-secondary);
     margin-top: 0.25rem;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
 }
+
 .hook-bank-list {
     flex-grow: 1;
     overflow-y: auto;
-    padding-right: 1rem;
+    padding-right: 1rem; /* for scrollbar spacing */
 }
+
 .hook-category {
     margin-bottom: 2rem;
 }
+
 .hook-category h3 {
     font-size: 1.1rem;
     font-weight: 600;
@@ -471,6 +351,7 @@ textarea:focus {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
 }
+
 .hook-item {
     background-color: var(--input-bg);
     padding: 1rem;
@@ -481,23 +362,60 @@ textarea:focus {
     transition: all 0.2s ease-in-out;
     font-family: var(--font-mono);
 }
+
 .hook-item:hover {
     border-color: var(--accent-color);
     transform: translateX(5px);
 }
 
-/* === RESPONSIVE DESIGN === */
-@media (max-width: 1200px) {
-    .app-container {
-        grid-template-columns: 1.4fr 1fr;
-        padding: 1rem;
-    }
-    .left-panel {
-        display: none; /* Hide drafts panel on smaller screens for simplicity. Can be toggled with JS later if needed. */
-    }
+/* Settings Modal Specifics */
+.hidden { display: none !important; }
+
+.key-status-display {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    text-align: center;
 }
 
-@media (max-width: 800px) {
+button.danger { 
+    background: var(--danger-color); 
+    color: white; 
+    margin-top: 10px; 
+}
+
+.notice { font-size: 0.75rem; color: var(--text-secondary); margin-top: 10px; }
+
+
+/* ==========================================================================
+   7. Miscellaneous & Utility Styles
+   ========================================================================== */
+.status-light-red {
+    width: 10px;
+    height: 10px;
+    background-color: var(--danger-color);
+    border-radius: 50%;
+}
+
+.status-light-green {
+    width: 10px;
+    height: 10px;
+    background-color: #2ED573;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #2ED573;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { transform: translateY(-50px); } to { transform: translateY(0); } }
+
+/* ==========================================================================
+   8. Responsive Design
+   ========================================================================== */
+@media (max-width: 1024px) {
     body {
         height: auto;
         overflow: auto;
@@ -505,10 +423,14 @@ textarea:focus {
     .app-container {
         grid-template-columns: 1fr;
         height: auto;
-        padding: 0.5rem;
+        min-height: 100vh;
+        padding: 1rem;
         gap: 1rem;
     }
     .editor-panel, .chat-panel {
-        height: 80vh; /* Give them a fixed height on mobile */
+        height: auto;
+    }
+    .chat-panel {
+        min-height: 80vh;
     }
 }

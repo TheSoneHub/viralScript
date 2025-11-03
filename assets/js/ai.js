@@ -1,211 +1,206 @@
 // /assets/js/ai.js
-// This file contains all logic related to interacting with the Google Gemini API.
-// It is responsible for constructing precise prompts for different tasks and handling the API responses.
-
-// === 1. CONSTANTS ===
 
 const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
+/**
+ * Creates the core system instruction that defines the AI's identity and operational modes.
+ * This is the foundational prompt for all interactions.
+ * @returns {object} A Gemini-formatted instruction object.
+ */
+function getSystemInstruction() {
+    return {
+        role: "user",
+        parts: [{ "text": `You are a "Viral Script Director," a world-class AI for Burmese content creators. Your entire process is governed by the "Coach, Not The Crutch" philosophy. You guide, teach, and empower, you don't just give answers.
 
-// === 2. CORE API COMMUNICATION ===
+        **Your Operational Modes:**
+        1.  **Discovery Mode:** Your initial mode. Your goal is to understand the user's vision by asking intelligent, dynamic follow-up questions until you have a clear picture of the script's 'Core Pillars' (Objective, Audience, Problem, Value, Tone, CTA). Ask ONE question at a time. Every question you ask must include examples to guide the user. When you have enough information, your final response in this mode MUST be the token: "[PROCEED_TO_GENERATION]".
+        2.  **Generation Mode:** Triggered by a specific prompt. Your only job is to generate the first draft of the script in a specific JSON format based on a conversation summary.
+        3.  **Editing Mode:** After generation, you help the user refine the script part-by-part. You act as a script doctor, providing precise revisions.
+        4.  **Final Check Mode:** When the user is satisfied, you perform a "Pre-Flight Check," analyzing the script for performance (pacing, tone, clarity) and adding delivery notes.
+        
+        **Core Rules:**
+        - Never break character. You are a professional coach.
+        - Always ask clarifying questions.
+        - Every suggestion must be explained with the "why" (the strategy or psychological reason).
+        - Communicate ONLY in natural, expert-level Burmese.`}]
+    };
+}
 
 /**
- * A centralized function to make calls to the Gemini API.
- * This handles authentication, request formatting, and basic error handling.
- * @param {Array<Object>} contents - The 'contents' array to be sent to the Gemini API.
- * @returns {Promise<string|null>} The text response from the AI, or null if an error occurs.
+ * Handles the general "Discovery Mode" conversation.
+ * @param {Array<object>} history - The full chat history.
+ * @returns {Promise<string|null>} The AI's next question or a special token.
  */
-async function callGeminiAPI(contents) {
+async function generateChatResponse(history) {
     const apiKey = getApiKey();
     if (!apiKey) {
-        console.error("API Key is missing. Cannot make API call.");
-        alert("ကျေးဇူးပြု၍ Settings တွင် သင်၏ API key ကို ဦးစွာထည့်သွင်းပါ။");
-        return null;
+        console.error("API Key not found for chat response.");
+        return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
     }
+
+    const systemInstruction = getSystemInstruction();
+    const requestBody = {
+        contents: [systemInstruction, ...history]
+    };
 
     try {
         const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents })
+            body: JSON.stringify(requestBody)
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("API Error Response:", errorData);
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            console.warn("AI response was blocked or empty.", data);
-            return "AI ထံမှ အကြောင်းပြန်ကြားချက် မရရှိပါ (သို့မဟုတ်) content မှာ ကန့်သတ်ချက်များကြောင့် ပိတ်ဆို့ခံရခြင်း ဖြစ်နိုင်ပါသည်။";
-        }
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
         
+        const data = await response.json();
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("AI response was blocked or empty.");
+        }
         return data.candidates[0].content.parts[0].text;
 
     } catch (error) {
-        console.error("Failed to call Gemini API:", error);
+        console.error("Failed to generate chat response:", error);
+        return "AI နှင့် ဆက်သွယ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။ ခဏအကြာတွင် ထပ်မံကြိုးစားကြည့်ပါ။";
+    }
+}
+
+/**
+ * Generates the script draft based on the conversation history.
+ * @param {Array<object>} history - The full chat history.
+ * @returns {Promise<object|null>} A parsed JSON object of the script or null if failed.
+ */
+async function generateScriptFromHistory(history) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        console.error("API Key not found for script generation.");
         return null;
     }
-}
 
+    const conversationSummary = history
+        .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.parts[0].text}`)
+        .join('\n');
 
-// === 3. PROMPT ENGINEERING & PUBLIC FUNCTIONS ===
-
-// --- A. Discovery / Consultation Mode ---
-
-/**
- * Creates the system instruction for the AI during the guided discovery phase.
- * It tells the AI its persona and the specific question it needs to ask.
- * @param {string} personality - The selected AI persona ('Creative Coach', 'Viral Editor', etc.).
- * @param {Object} questionData - An object containing the question, explanation, and examples for the current step.
- * @returns {Object} The system instruction object for the Gemini API.
- */
-function getSystemInstructionForDiscovery(personality, questionData) {
-    let personaPrompt;
-    switch (personality) {
-        case 'Viral Editor':
-            personaPrompt = `သင်၏ လက်ရှိ Persona မှာ 'Viral Editor' ဖြစ်သည်။ သင်၏ အသံနေအသံထားမှာ တိကျ၊ ပြတ်သားပြီး professional ဆန်သည်။`;
-            break;
-        case 'Hook Analyzer':
-            personaPrompt = `သင်၏ လက်ရှိ Persona မှာ 'Hook Analyzer' ဖြစ်သည်။ သင်၏ တာဝန်မှာ user ၏ idea များကို hook-focused ရှုထောင့်မှ အကြံဉာဏ်ပေးရန် ဖြစ်သည်။`;
-            break;
-        case 'Creative Coach':
-        default:
-            personaPrompt = `သင်၏ လက်ရှိ Persona မှာ 'Creative Coach' ဖြစ်သည်။ သင်၏ အသံနေအသံထားမှာ အားပေးတိုက်တွန်းတတ်ပြီး ဖန်တီးမှုဆိုင်ရာ idea အသစ်များဖြင့် ပြည့်နှက်နေသည်။`;
-            break;
-    }
-
-    return {
-        role: "user",
-        parts: [{ "text": `
-        သင်၏ Core Identity မှာ 'Creative Consultant AI' ဖြစ်သည်။ သင်၏ အဓိကတာဝန်မှာ Burmese content creator များကို သူတို့၏ script idea များအတွက် လမ်းညွှန်ပေးရန် ဖြစ်သည်။
-        ${personaPrompt}
-
-        **သင်၏ လက်ရှိအလုပ်:**
-        User ကို အောက်ပါမေးခွန်း **တစ်ခုတည်းကိုသာ** မေးပါ။ User ၏ အဖြေကို စောင့်ပါ။ မေးခွန်းများ ကြိုမေးခြင်း (သို့) အကြံပြုချက်များ ကြိုပေးခြင်း မပြုလုပ်ပါနှင့်။
-        
-        **မေးခွန်း:**
-        ${questionData.question}
-
-        **ရှင်းလင်းချက်:**
-        ${questionData.explanation}
-
-        **ဥပမာများ:**
-        ${questionData.examples}
-        
-        သင်၏ တုံ့ပြန်မှုကို တိုရှင်းပြီး မေးခွန်းအပေါ်တွင်သာ အာရုံစိုက်ပါ။`}]
-    };
-}
-
-/**
- * Generates the AI's next question during the discovery phase.
- * @param {Array<Object>} history - The current chat history.
- * @param {string} personality - The selected AI persona.
- * @param {Object} questionData - The data for the next question to be asked.
- * @returns {Promise<string|null>} The AI's response text.
- */
-async function generateDiscoveryResponse(history, personality, questionData) {
-    const systemInstruction = getSystemInstructionForDiscovery(personality, questionData);
-    const formattedHistory = history.map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-    }));
-    const contents = [systemInstruction, ...formattedHistory];
-    return await callGeminiAPI(contents);
-}
-
-
-// --- B. Script Generation Mode ---
-
-/**
- * Creates the prompt to generate the full script based on collected data.
- * @param {Object} discoveryData - The object containing all answers from the user.
- * @returns {Object} The complete 'contents' array for the Gemini API.
- */
-function createScriptGenerationPrompt(discoveryData) {
     const prompt = `
-        You are a World-Class Viral Script Writer for Burmese audiences. Based on the following user requirements, create a powerful and effective short-form video script.
-        
-        **User Requirements:**
-        - Topic: ${discoveryData.topic}
-        - Objective: ${discoveryData.objective}
-        - Target Audience: ${discoveryData.audience}
-        - Core Problem/Context: ${discoveryData.problem}
-        - Value/Solution: ${discoveryData.value}
-        - Desired Hook Type: ${discoveryData.hookType}
-        - Call to Action: ${discoveryData.cta}
-        - Platform: ${discoveryData.platform}
-        - Duration: ${discoveryData.duration}
+        **MODE: GENERATION**
+        You are a World-Class Viral Script Writer. Based on the following conversation summary, identify the user's Core Pillars (Objective, Audience, Problem, Value, Tone, CTA) and create a powerful short-form video script.
 
-        Your task is to generate a script and respond ONLY with a single, raw JSON object. Do not add any explanation, introduction, or markdown backticks. The JSON structure MUST be exactly as follows:
+        **Conversation Summary:**
+        ---
+        ${conversationSummary}
+        ---
+
+        Your task is to generate a script and respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks around the JSON. Your entire response must be ONLY the JSON object itself.
+
+        The JSON structure MUST be:
         {
           "hook": "Your generated hook text here.",
           "body": "Your generated body text here. Use \\n for line breaks to ensure good pacing.",
           "cta": "Your generated call to action here."
         }
     `;
-    return [{ role: "user", parts: [{ text: prompt }] }];
-}
-
-/**
- * Generates a full script and expects a clean JSON object in return.
- * @param {Object} discoveryData - The collected data from the user.
- * @returns {Promise<Object|null>} A parsed JSON object with hook, body, and cta, or null on failure.
- */
-async function generateScriptFromDiscovery(discoveryData) {
-    const contents = createScriptGenerationPrompt(discoveryData);
-    const responseText = await callGeminiAPI(contents);
-    
-    if (!responseText) return null;
 
     try {
-        // Clean the response to ensure it's valid JSON, just in case.
-        const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanedText);
+        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
+        });
+
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        
+        const data = await response.json();
+        let responseText = data.candidates[0].content.parts[0].text;
+        
+        // Clean the response to ensure it's valid JSON
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        return JSON.parse(responseText);
+
     } catch (error) {
-        console.error("Failed to parse script JSON from AI response:", error, "Response was:", responseText);
+        console.error("Failed to generate or parse script:", error);
         return null;
     }
 }
 
-
-// --- C. Interactive Editing Mode ---
-
 /**
- * Creates the prompt to revise a specific part of the script.
- * @param {string} partToRevise - 'hook', 'body', or 'cta'.
+ * Revises a specific part of the script based on user instruction.
+ * @param {string} part - The part to revise ('hook', 'body', or 'cta').
  * @param {string} currentText - The current text of that part.
- * @param {string} userInstruction - The user's command for how to change it.
- * @returns {Object} The complete 'contents' array for the Gemini API.
+ * @param {string} instruction - The user's instruction for revision.
+ * @returns {Promise<string|null>} The revised text or null if failed.
  */
-function createRevisionPrompt(partToRevise, currentText, userInstruction) {
-    const prompt = `
-        You are a Script Doctor. The user wants to revise a part of their script.
-        
-        **Part to Revise:** ${partToRevise}
-        **Current Text:** "${currentText}"
-        **User's Instruction:** "${userInstruction}"
+async function reviseScriptPart(part, currentText, instruction) {
+    const apiKey = getApiKey();
+    if (!apiKey) return null;
 
-        Your task is to rewrite the text based on the user's instruction. 
-        Respond ONLY with the revised text. 
-        Do not add any extra words, explanations, quotes, or conversational text like "Here is the revised version:".
+    const prompt = `
+        **MODE: EDITING**
+        You are a Script Doctor. Revise the following script part based on the user's instruction.
+        - **Part to Revise:** ${part}
+        - **Current Text:** "${currentText}"
+        - **User's Instruction:** "${instruction}"
+        
+        Respond ONLY with the newly revised text. Do not add any extra words, explanations, or quotes. The response should be pure text.
     `;
-    return [{ role: "user", parts: [{ text: prompt }] }];
+    
+    try {
+        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
+        });
+
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text.trim();
+
+    } catch (error) {
+        console.error("Failed to revise script part:", error);
+        return currentText; // Return original text on failure
+    }
 }
 
 /**
- * Revises a single part of the script based on user feedback.
- * @param {string} partToRevise - 'hook', 'body', or 'cta'.
- * @param {string} currentText - The text that needs to be revised.
- * @param {string} userInstruction - The user's instruction.
- * @returns {Promise<string|null>} The revised text, or null on failure.
+ * Performs the "Pre-Flight Check" and returns a formatted Markdown analysis.
+ * @param {string} fullScript - The complete script as a single string.
+ * @returns {Promise<string|null>} A formatted Markdown string or an error message.
  */
-async function reviseScriptPart(partToRevise, currentText, userInstruction) {
-    const contents = createRevisionPrompt(partToRevise, currentText, userInstruction);
-    const responseText = await callGeminiAPI(contents);
-    // The response should be clean text, so we return it directly.
-    return responseText;
+async function performFinalCheck(fullScript) {
+    const apiKey = getApiKey();
+    if (!apiKey) return "API Key မထည့်သွင်းရသေးပါ။";
+
+    const prompt = `
+        **MODE: FINAL CHECK**
+        The user's script is complete. Your task is to perform a "Pre-Flight Check" as a Performance Coach.
+        
+        **Full Script to Analyze:**
+        ---
+        ${fullScript}
+        ---
+        
+        **Your Instructions:**
+        1.  Rewrite the entire script, embedding performance notes like "(Tone: Urgent)", "(Pause here)", "(Emphasize this word)" directly into the text.
+        2.  After the script, provide a "Sanity Check" section.
+        3.  In the Sanity Check, estimate the speaking time in seconds.
+        4.  Analyze the script's Clarity and Energy Curve for its intended platform (assume TikTok/Reels).
+        5.  Format your entire response professionally using clear Burmese and Markdown. Start with a confident opening line.
+    `;
+    
+    try {
+        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
+        });
+
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+
+    } catch (error) {
+        console.error("Failed to perform final check:", error);
+        return "Final Check ပြုလုပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။";
+    }
 }
