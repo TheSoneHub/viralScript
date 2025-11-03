@@ -357,3 +357,136 @@ button.danger { background: var(--danger-color); color: white; margin-top: 10px;
         min-height: 80vh;
     }
 }
+
+/* ... (All previous styles are unchanged) ... */
+
+/* 👇 NEW STYLES FOR ACCESS GATE 👇 */
+.hidden {
+    display: none !important;
+}
+
+#access-gate {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.gate-content {
+    text-align: center;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.gate-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.gate-content p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#access-code-input {
+    flex-grow: 1;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+#enter-app-btn {
+    background-color: var(--accent-color);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.error-message {
+    color: var(--danger-color);
+    margin-top: 1rem;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.shake {
+    animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+
+/* 👇 NEW STYLES FOR SKELETON LOADER 👇 */
+.skeleton-message {
+    align-self: flex-start;
+    width: 70%;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    background-color: var(--ai-msg-bg);
+    padding: 1rem;
+}
+
+.skeleton-line {
+    height: 1em;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 0.75em;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-line:last-child {
+    margin-bottom: 0;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+@keyframes pulse {
+  50% { opacity: .5; }
+}
+
+
+/* 👇 NEW STYLES FOR MOBILE RESPONSIVENESS 👇 */
+@media (max-width: 1024px) {
+    body {
+        overflow: auto;
+    }
+    .app-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        height: auto;
+        min-height: 100vh;
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+    .editor-panel, .chat-panel {
+        height: 90vh; /* Give them significant height */
+    }
+    .script-wrapper {
+        padding: 1rem;
+    }
+    .panel-header {
+        padding: 1rem;
+    }
+}
