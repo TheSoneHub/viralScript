@@ -358,6 +358,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('API Key ကို ဖယ်ရှားပြီးပါပြီ။');
             }
         });
+
+        // === Save Script Button ===
+    saveScriptBtn.addEventListener('click', () => {
+        const hook = hookInput.value.trim();
+        const body = bodyInput.value.trim();
+        const cta = ctaInput.value.trim();
+
+        if (!hook && !body && !cta) {
+            alert("🚫 Script is empty. Something to save first!");
+            return;
+        }
+
+        const title = prompt("Script အတွက် ခေါင်းစဉ်တစ်ခုပေးပါ။") || "Untitled Script";
+
+        const scriptObject = {
+            id: Date.now(),
+            title: title.trim(),
+            hook,
+            body,
+            cta,
+            createdAt: new Date().toLocaleString()
+        };
+
+        if (saveScript(scriptObject)) {
+            alert(`✅ '${title}' ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။`);
+        } else {
+            alert("❌ Script ကို သိမ်းရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။");
+        }
+    });
+
         
         settingsBtn.addEventListener('click', () => settingsModal.style.display = 'block');
         closeModalBtn.addEventListener('click', () => settingsModal.style.display = 'none');
