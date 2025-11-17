@@ -1,4 +1,13 @@
 // /assets/js/main.js - Definitive, Corrected Access Gate Logic
+// /assets/js/main.js
+
+// --- MOBILE KEYBOARD FIX ---
+function setAppHeight() {
+    const doc = document.documentElement;
+    doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+}
+window.addEventListener('resize', setAppHeight);
+setAppHeight(); // Set it on initial load
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---

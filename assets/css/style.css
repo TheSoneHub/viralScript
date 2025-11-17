@@ -32,7 +32,8 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: var(--font-primary);
-    height: 100vh;
+    /* Use the JavaScript variable for a stable height */
+    height: var(--app-height); 
     width: 100vw;
     overflow: hidden;
     display: flex;
@@ -128,12 +129,14 @@ body {
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-/* === 3. MOBILE-FIRST APP STRUCTURE === */
+/* Find the original '.mobile-app-wrapper' and replace it with this */
 .mobile-app-wrapper {
     flex-grow: 1;
     position: relative;
     overflow: hidden;
-    display: flex;
+    /* This is a key part of the fix */
+    display: flex; 
+    flex-direction: column;
 }
 
 .app-view {
