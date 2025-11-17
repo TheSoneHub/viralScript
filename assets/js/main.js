@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive, Complete Mobile-First Version
+// /assets/js/main.js - Definitive, Corrected Access Gate Logic
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
@@ -19,7 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return data.status === 'success';
         } catch (error) {
             console.error('Email validation failed:', error);
-            if (errorMessage) errorMessage.textContent = 'Could not verify email.';
+            if (errorMessage) {
+                errorMessage.textContent = 'Could not verify email.';
+                errorMessage.classList.remove('hidden');
+            }
             return false;
         }
     }
@@ -38,16 +41,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!emailInput || !enterAppBtn || enterAppBtn.disabled) return;
         const email = emailInput.value;
         if (!email) return;
+
         enterAppBtn.disabled = true;
         enterAppBtn.textContent = 'Verifying...';
         if(errorMessage) errorMessage.classList.add('hidden');
+
         const isApproved = await validateEmail(email);
+        
         if (isApproved) {
             localStorage.setItem('approvedUserEmail', email);
             grantAccessAndInitialize();
         } else {
             emailInput.classList.add('shake');
-            if (errorMessage) errorMessage.textContent = 'Access Denied.';
+            if (errorMessage) {
+                errorMessage.textContent = 'Access Denied.';
+                errorMessage.classList.remove('hidden');
+            }
             setTimeout(() => emailInput.classList.remove('shake'), 820);
             enterAppBtn.disabled = false;
             enterAppBtn.textContent = 'Continue';
@@ -57,20 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkStoredSession() {
         const storedEmail = localStorage.getItem('approvedUserEmail');
         if (storedEmail) {
-            if(enterAppBtn) enterAppBtn.disabled = true;
+            if(enterAppBtn) {
+                enterAppBtn.disabled = true;
+                enterAppBtn.textContent = 'Checking session...';
+            }
             const isStillApproved = await validateEmail(storedEmail);
-            if (isStillApproved) { grantAccessAndInitialize(); } 
-            else {
+            if (isStillApproved) {
+                grantAccessAndInitialize();
+            } else {
                 localStorage.removeItem('approvedUserEmail');
-                if(enterAppBtn) enterAppBtn.disabled = false;
+                if(enterAppBtn) {
+                    enterAppBtn.disabled = false;
+                    enterAppBtn.textContent = 'Continue';
+                }
             }
         }
     }
 
-    if (enterAppBtn) {
+    if (enterAppBtn && emailInput) {
         enterAppBtn.addEventListener('click', handleEmailLogin);
-        emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleEmailLogin(); } });
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleEmailLogin();
+            }
+        });
     }
+
     checkStoredSession();
 });
 
