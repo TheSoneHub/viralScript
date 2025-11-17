@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive Version with "Always-On Janitor"
+// /assets/js/main.js - Definitive Version with Final Parsing Fix
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -170,13 +170,10 @@ function initializeApp() {
         try {
             const aiResponseText = await generateChatResponse(state.chatHistory);
             if (aiResponseText) {
-                // THE NEW "ALWAYS-ON JANITOR" LOGIC
                 const scriptJSON = extractJSON(aiResponseText);
                 if (scriptJSON) {
-                    // It's a script! Process it, don't show it.
                     processAndFillScript(scriptJSON);
                 } else {
-                    // It's a normal message. Show it.
                     addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
@@ -190,15 +187,29 @@ function initializeApp() {
     }
 
     function processAndFillScript(scriptJSON) {
-        if (scriptJSON && scriptJSON.scenes) {
+        if (scriptJSON && scriptJSON.scenes && Array.isArray(scriptJSON.scenes)) {
             const scenes = scriptJSON.scenes;
-            const hook = scenes[0]?.script_burmese || '';
-            const cta = scenes[scenes.length - 1]?.script_burmese || '';
-            const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
+            let hook = '', body = '', cta = '';
+
+            const getLine = (scene) => scene?.script_burmese || '';
+
+            if (scenes.length === 1) {
+                hook = getLine(scenes[0]);
+            } else if (scenes.length === 2) {
+                hook = getLine(scenes[0]);
+                body = getLine(scenes[1]);
+            } else if (scenes.length > 2) {
+                hook = getLine(scenes[0]);
+                cta = getLine(scenes[scenes.length - 1]);
+                body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
+            }
+
             dom.hookInput.value = hook;
             dom.bodyInput.value = body;
             dom.ctaInput.value = cta;
+            
             showView('editor');
+            
             const nextStepMessage = "The first draft is ready in the Editor.";
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
