@@ -137,7 +137,6 @@ function initializeApp() {
         try {
             return JSON.parse(jsonString);
         } catch (error) {
-            console.error("Failed to parse extracted JSON string:", jsonString);
             return null;
         }
     }
@@ -146,24 +145,18 @@ function initializeApp() {
         const scriptJSON = extractJSON(rawText);
         if (scriptJSON && (scriptJSON.scenes || scriptJSON.script)) {
             const scenes = scriptJSON.scenes || scriptJSON.script;
-            const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
-            
+             const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
             const hook = getLine(scenes[0]);
             const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
             const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
-
-            dom.hookInput.value = hook; 
-            dom.bodyInput.value = body; 
-            dom.ctaInput.value = cta;
-
+            dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
             showView('editor');
-
             const nextStepMessage = "The first draft is ready in the Editor.";
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
         } else {
-            console.error("Janitor function failed to find valid JSON in the response:", rawText);
+            console.error("Janitor failed to find valid JSON:", rawText);
             const recoveryMessage = "There was an error generating the script format. Please try asking for the angle again.";
             addMessageToChat({ role: 'model', text: recoveryMessage });
         }
@@ -172,12 +165,10 @@ function initializeApp() {
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
-
         addMessageToChat({ role: 'user', text: userMessageText });
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
         setUiLoading(true);
-
         try {
             const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "1", "2", "3"];
             const isChoosingAngle = angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t));
@@ -203,7 +194,6 @@ function initializeApp() {
     }
 
     function addMessageToChat({ role, text }) {
-        if (!dom.chatHistoryEl) return;
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
         messageDiv.innerHTML = marked.parse(text || '');
@@ -213,9 +203,8 @@ function initializeApp() {
 
     function setUiLoading(isLoading) {
         state.isAwaitingResponse = isLoading;
-        if(dom.chatInput) dom.chatInput.disabled = isLoading;
-        if(dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
-
+        dom.chatInput.disabled = isLoading;
+        dom.sendChatBtn.disabled = isLoading;
         const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
         if (isLoading && !skeleton) {
             const skeletonDiv = document.createElement('div');
@@ -228,51 +217,33 @@ function initializeApp() {
     }
 
     function clearEditor() {
-        if (dom.hookInput) dom.hookInput.value = '';
-        if (dom.bodyInput) dom.bodyInput.value = '';
-        if (dom.ctaInput) dom.ctaInput.value = '';
+        dom.hookInput.value = ''; dom.bodyInput.value = ''; dom.ctaInput.value = '';
     }
     
-    function openModal(modalElement) {
-        if (modalElement) modalElement.style.display = 'block';
-    }
-
-    function closeModal(modalElement) {
-        if (modalElement) modalElement.style.display = 'none';
-    }
+    function openModal(modalElement) { if (modalElement) modalElement.style.display = 'block'; }
+    function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
 
     function bindEventListeners() {
-        if (dom.navEditorBtn) dom.navEditorBtn.addEventListener('click', () => showView('editor'));
-        if (dom.navChatBtn) dom.navChatBtn.addEventListener('click', () => showView('chat'));
-        if (dom.sendChatBtn) dom.sendChatBtn.addEventListener('click', handleSendMessage);
-        if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => {
+        dom.navEditorBtn.addEventListener('click', () => showView('editor'));
+        dom.navChatBtn.addEventListener('click', () => showView('chat'));
+        dom.sendChatBtn.addEventListener('click', handleSendMessage);
+        dom.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
         });
-        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => {
-            if (confirm("Start a new script?")) { startNewScriptWorkflow(); }
-        });
-        if (dom.saveScriptBtn) dom.saveScriptBtn.addEventListener('click', () => {
+        dom.newScriptBtn.addEventListener('click', () => { if (confirm("Start a new script?")) { startNewScriptWorkflow(); } });
+        dom.saveScriptBtn.addEventListener('click', () => {
              const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
         });
-        if (dom.copyScriptBtn) dom.copyScriptBtn.addEventListener('click', () => {
+        dom.copyScriptBtn.addEventListener('click', () => {
             const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
             navigator.clipboard.writeText(fullScript).then(() => alert("Script copied!"));
         });
-        if (dom.settingsBtn) dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
-        if (dom.myScriptsBtn) dom.myScriptsBtn.addEventListener('click', () => openModal(dom.scriptVaultModal));
-        
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) {
-                closeModal(event.target);
-            }
-        });
-        
+        dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
+        dom.myScriptsBtn.addEventListener('click', () => openModal(dom.scriptVaultModal));
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
         document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const modal = btn.closest('.modal');
-                if (modal) closeModal(modal);
-            });
+            btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
         });
     }
 
@@ -280,8 +251,7 @@ function initializeApp() {
         bindEventListeners();
         startNewScriptWorkflow();
         updateNav();
-        // Additional initializations (API key status, welcome guide, etc.)
-        // would go here. For now, this is the core.
+        // Other initializations can be added here
     }
 
     initialize();
