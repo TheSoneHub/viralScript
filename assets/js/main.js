@@ -231,46 +231,43 @@ async function handleSendMessage() {
     }
 
     // RENAMED from generateFinalScript to processGeneratedScript for clarity
-    async function processGeneratedScript() {
-        // The AI's JSON response is the second to last message in the history.
-        // The last one is the '[SCRIPT_GENERATED]' signal.
+async function processGeneratedScript() {
         if (state.chatHistory.length < 1) return;
 
-        try {
-            const jsonResponse = state.chatHistory[state.chatHistory.length - 1];
-            if (jsonResponse.role !== 'model') {
-                 // Fallback to find the last model response if signal is bundled
-                 const lastModelResponse = [...state.chatHistory].reverse().find(m => m.role === 'model');
-                 if(!lastModelResponse) throw new Error("Could not find the AI's JSON response in history.");
-                 scriptJSON = JSON.parse(lastModelResponse.parts[0].text);
-            } else {
-                scriptJSON = JSON.parse(jsonResponse.parts[0].text);
-            }
+        // Find the last message from the model.
+        const lastModelResponse = [...state.chatHistory].reverse().find(m => m.role === 'model');
+        if (!lastModelResponse) {
+            throw new Error("Could not find the AI's response in history.");
+        }
 
-            if (scriptJSON && scriptJSON.scenes) {
-                const scenes = scriptJSON.scenes;
-                const hook = scenes[0]?.script_burmese || '';
-                const cta = scenes[scenes.length - 1]?.script_burmese || '';
-                const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
-                
-                dom.hookInput.value = hook;
-                dom.bodyInput.value = body;
-                dom.ctaInput.value = cta;
-                
-                showView('editor'); // Switch to the editor
-                
-                // Add a clean final message to the chat
-                const nextStepMessage = "The first draft is ready in the Editor. You can ask me for revisions now.";
-                addMessageToChat({ role: 'model', text: nextStepMessage });
-                state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-                
-                state.appMode = 'EDITING';
+        const responseText = lastModelResponse.parts[0].text;
+
+        try {
+            // Check if the response is actually JSON before trying to parse
+            if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+                const scriptJSON = JSON.parse(responseText);
+                // ... (the rest of the successful JSON parsing logic is the same)
+                if (scriptJSON && scriptJSON.scenes) {
+                    const scenes = scriptJSON.scenes;
+                    const hook = scenes[0]?.script_burmese || '';
+                    const cta = scenes[scenes.length - 1]?.script_burmese || '';
+                    const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
+                    dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
+                    showView('editor');
+                    const nextStepMessage = "The first draft is ready in the Editor.";
+                    addMessageToChat({ role: 'model', text: nextStepMessage });
+                    state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+                    state.appMode = 'EDITING';
+                } else { throw new Error("Parsed JSON is not in the expected format."); }
             } else {
-                throw new Error("Parsed JSON is not in the expected format.");
+                // The AI did not return JSON. It sent a normal message.
+                throw new Error("AI failed to return JSON. Response was: " + responseText);
             }
         } catch(error) {
             console.error("Error processing generated script:", error);
-            addMessageToChat({ role: 'model', text: 'There was an error processing the generated script. Please try again.' });
+            const recoveryMessage = "It seems there was an error generating the script in the correct format. Please try asking for the angle again, for example: 'Let's go with angle 2 again.'";
+            addMessageToChat({ role: 'model', text: recoveryMessage });
+            // Don't change the app mode, allow the user to try again.
         }
     }
 
