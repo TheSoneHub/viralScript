@@ -183,32 +183,46 @@ async function reviseScriptPart(part, currentText, instruction, signal) {
 // ... (Other functions remain the same) ...
 
 /**
- * Performs a holistic analysis AND suggests a concrete fix for the weakest part.
+ * Performs a holistic analysis and REBUILDS the script for perfect cohesion.
  * @param {string} fullScript - The complete script as a single string.
  * @param {AbortSignal} signal - The AbortSignal for the request.
- * @returns {Promise<string|null>} A formatted Markdown analysis with a suggested repair.
+ * @returns {Promise<string|null>} A formatted Markdown report with a complete, rewritten script.
  */
 async function performFullScriptAnalysis(fullScript, signal) {
     const prompt = `
-        **MODE: STRATEGIC ANALYSIS & REPAIR**
-        You are a "Script Strategist." Your task is to perform a holistic review of the user's complete script, identify the single biggest strategic weakness, and proactively rewrite that part to fix the script's cohesion.
+        **MODE: STRATEGIC RE-ALIGNMENT**
+        You are an expert Script Strategist. Your task is to analyze the user's script, identify its strongest "core anchor" (the most powerful idea, whether it's in the hook, body, or cta), and then REWRITE the other parts to perfectly align with that anchor, creating a seamless and powerful script. Do not just find the problem; solve it completely.
 
         **Full Script to Analyze:**
         ---
         ${fullScript}
         ---
 
-        **Your Analysis & Repair Process:**
-        1.  **Analyze Cohesion:** Critically examine the connections: Does the Hook's promise get fulfilled in the Body? Does the Body's value logically lead to the CTA?
-        2.  **Identify Weakest Link:** Determine which part (Hook, Body, or CTA) is the primary reason for any strategic disconnect.
-        3.  **Rewrite the Weak Part:** Rewrite ONLY the identified weak part to perfectly align with the other two parts, making the entire script seamless.
+        **Your Re-Alignment Process:**
+        1.  **Identify the Core Anchor:** Read the whole script and decide which part (Hook, Body, or CTA) contains the most compelling and important idea. This part will be preserved or enhanced.
+        2.  **Rebuild Around the Anchor:** Rewrite the OTHER TWO parts so they flawlessly support the anchor. For example, if the Body's value is the anchor, rewrite the Hook to promise that value and rewrite the CTA to be the logical next step after receiving that value.
+        3.  **Present the Complete, Fixed Script:** Return the full, new, cohesive script.
 
         **Your Response Format (MUST FOLLOW STRICTLY):**
-        - You must respond in professional Burmese using Markdown.
-        - Start with a main heading: "### 📜 Script Analysis & Repair"
-        - **Analysis Section:** Under a subheading "**تحليل:**", provide a very brief, one-sentence summary of the main issue.
-        - **Repair Section:** Under a subheading "**ပြုပြင်မှု:**", state which part you rewrote and why. For example: "Hook နှင့် Body အချိတ်အဆက် ပိုကောင်းစေရန် Body ကို အသစ်ပြန်လည် ရေးသားထားပါသည်။"
-        - **The Fix:** Provide the newly rewritten text under a clear label like "**New Body:**" or "**New Hook:**". Only show the new text for the part you fixed.
+        - Respond in professional Burmese using Markdown.
+        - Start with a main heading: "### 📜 Script Re-Alignment Report"
+        - **Analysis Section:** Under a subheading "**تحليل:**", provide a brief, one-sentence summary of the original script's main strategic issue.
+        - **Strategy Section:** Under a subheading "**យុទ្ធសាស្ត្រ:**", explain which part you chose as the "Core Anchor" and why you rebuilt the script around it.
+        - **Rewritten Script Section:** Under a subheading "**ပြင်ဆင်ပြီးသော Script အသစ်:**", present the complete, new script with clear labels for each part.
+
+        **Example Response Structure:**
+        ### 📜 Script Re-Alignment Report
+        **تحليل:** မူလ Script ၏ Hook နှင့် Body အချိတ်အဆက် အားနည်းနေပါသည်။
+        **យុទ្ធសាស្ត្រ:** Body တွင်ပါသော 'AI ဖြင့် အချိန်ကုန်သက်သာစေခြင်း' ဆိုသည့် အဓိက Value ကို Anchor အဖြစ်အသုံးပြုပြီး Hook နှင့် CTA ကို ထို Value နှင့်ကိုက်ညီအောင် အသစ်ပြန်လည်ရေးသားထားပါသည်။
+        **ပြင်ဆင်ပြီးသော Script အသစ်:**
+        **New Hook:**
+        [The newly written Hook text]
+
+        **New Body:**
+        [The original Body text, preserved as the anchor]
+
+        **New CTA:**
+        [The newly written CTA text]
     `;
     const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
