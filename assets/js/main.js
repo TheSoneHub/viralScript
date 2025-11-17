@@ -208,23 +208,45 @@ function initializeApp() {
         }
     }
 
-    async function generateFinalScript() {
+async function generateFinalScript() {
         state.appMode = 'GENERATING';
         addMessageToChat({ role: 'model', text: 'Excellent choice. Generating the full script based on that angle...' });
         setInputsReadOnly(true);
         const scriptJSON = await generateScriptFromHistory(state.chatHistory);
+        
         if (scriptJSON && scriptJSON.scenes && scriptJSON.scenes.length > 0) {
             const scenes = scriptJSON.scenes;
-            const hook = scenes.find(s => s.scene_id.includes("HOOK"))?.script_burmese || '';
-            const cta = scenes.find(s => s.scene_id.includes("CTA"))?.script_burmese || '';
-            const body = scenes.filter(s => s.scene_id.includes("BODY")).map(s => s.script_burmese).join('\n\n').trim();
+            
+            // --- NEW ROBUST PARSING LOGIC ---
+            let hook = '', body = '', cta = '';
+
+            if (scenes.length === 1) {
+                // If there's only one scene, assume it's the hook.
+                hook = scenes[0].script_burmese || '';
+            } else if (scenes.length > 1) {
+                // First scene is always the hook.
+                hook = scenes[0].script_burmese || '';
+                // Last scene is always the CTA.
+                cta = scenes[scenes.length - 1].script_burmese || '';
+                // Everything in between is the body.
+                const bodyScenes = scenes.slice(1, -1);
+                body = bodyScenes.map(scene => scene.script_burmese).join('\n\n').trim();
+            }
+
             dom.hookInput.value = hook;
             dom.bodyInput.value = body;
             dom.ctaInput.value = cta;
-            const nextStepMessage = "The first draft is ready. You can now edit the text directly or ask me for revisions (e.g., 'make the hook shorter').";
+            
+            let nextStepMessage = "The first draft is ready. You can now edit the text directly or ask me for revisions (e.g., 'make the hook shorter').";
+            
+            // Proactively ask about the CTA if it was generated empty
+            if (!cta.trim()) {
+                nextStepMessage += "\n\nI noticed the Call to Action is currently empty. What is the main goal you want the audience to take after watching this video?";
+            }
+
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-            state.appMode = 'EDITING';
+            state.appMode = 'EDITING'; // Officially enter Editing Mode
         } else {
             addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try asking again.' });
             state.appMode = 'DISCOVERY';
