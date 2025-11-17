@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive, Complete Mobile-First Version
+// /assets/js/main.js - Definitive Version with "Always-On Janitor"
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -6,7 +6,7 @@ function setAppHeight() {
     doc.style.setProperty('--app-height', `${window.innerHeight}px`);
 }
 window.addEventListener('resize', setAppHeight);
-setAppHeight(); // Set it on initial load
+setAppHeight();
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ACCESS GATE LOGIC ---
@@ -87,12 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // MAIN APP LOGIC - MOBILE-FIRST
 // =================================================================
 function initializeApp() {
-    let state = {
-        currentView: 'chat',
-        isAwaitingResponse: false,
-        chatHistory: [],
-    };
-
+    let state = { currentView: 'chat', isAwaitingResponse: false, chatHistory: [] };
     const dom = {
         editorView: document.getElementById('editor-view'),
         chatView: document.getElementById('chat-view'),
@@ -125,17 +120,10 @@ function initializeApp() {
     };
 
     function showView(viewName) {
-        if (state.currentView === viewName && window.innerWidth < 1024) return;
         state.currentView = viewName;
-
         if (window.innerWidth < 1024) {
-            if (viewName === 'editor') {
-                dom.editorView.classList.remove('hidden');
-                dom.chatView.classList.add('hidden');
-            } else {
-                dom.chatView.classList.remove('hidden');
-                dom.editorView.classList.add('hidden');
-            }
+            dom.editorView.classList.toggle('hidden', viewName !== 'editor');
+            dom.chatView.classList.toggle('hidden', viewName !== 'chat');
         }
         updateNav();
     }
@@ -155,7 +143,7 @@ function initializeApp() {
 
     function startNewScriptWorkflow() {
         state.chatHistory = [];
-        dom.chatHistoryEl.innerHTML = '';
+        if (dom.chatHistoryEl) dom.chatHistoryEl.innerHTML = '';
         clearEditor();
         const firstQuestion = "Welcome! What is the topic for your new script?";
         addMessageToChat({ role: 'model', text: firstQuestion });
@@ -168,12 +156,8 @@ function initializeApp() {
         const endIndex = text.lastIndexOf('}');
         if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
         const jsonString = text.substring(startIndex, endIndex + 1);
-        try {
-            return JSON.parse(jsonString);
-        } catch (error) {
-            console.error("Failed to parse extracted JSON:", error);
-            return null;
-        }
+        try { return JSON.parse(jsonString); } 
+        catch (error) { return null; }
     }
 
     async function handleSendMessage() {
@@ -184,16 +168,15 @@ function initializeApp() {
         dom.chatInput.value = '';
         setUiLoading(true);
         try {
-            const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "1", "2", "3"];
-            const isChoosingAngle = angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t));
-            if (isChoosingAngle) {
-                const hiddenPrompt = `The user chose an angle. Now, execute Phase 2: SCRIPT PRODUCTION. Respond with the JSON object for the script.`;
-                const tempHistory = [...state.chatHistory, { role: 'user', parts: [{ text: hiddenPrompt }] }];
-                const rawAiResponse = await generateChatResponse(tempHistory);
-                processAndFillScript(rawAiResponse);
-            } else {
-                const aiResponseText = await generateChatResponse(state.chatHistory);
-                if (aiResponseText) {
+            const aiResponseText = await generateChatResponse(state.chatHistory);
+            if (aiResponseText) {
+                // THE NEW "ALWAYS-ON JANITOR" LOGIC
+                const scriptJSON = extractJSON(aiResponseText);
+                if (scriptJSON) {
+                    // It's a script! Process it, don't show it.
+                    processAndFillScript(scriptJSON);
+                } else {
+                    // It's a normal message. Show it.
                     addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
@@ -206,8 +189,7 @@ function initializeApp() {
         }
     }
 
-    function processAndFillScript(rawText) {
-        const scriptJSON = extractJSON(rawText);
+    function processAndFillScript(scriptJSON) {
         if (scriptJSON && scriptJSON.scenes) {
             const scenes = scriptJSON.scenes;
             const hook = scenes[0]?.script_burmese || '';
@@ -217,13 +199,13 @@ function initializeApp() {
             dom.bodyInput.value = body;
             dom.ctaInput.value = cta;
             showView('editor');
-            const nextStepMessage = "The first draft is ready in the Editor. You can ask me for revisions now.";
+            const nextStepMessage = "The first draft is ready in the Editor.";
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
         } else {
-            console.error("Janitor failed to find valid JSON in the response:", rawText);
-            const recoveryMessage = "It seems there was an error generating the script format. Please try asking for the angle again.";
+            console.error("Janitor received invalid JSON:", scriptJSON);
+            const recoveryMessage = "It seems there was an error generating the script format. Please try again.";
             addMessageToChat({ role: 'model', text: recoveryMessage });
         }
     }
@@ -262,9 +244,7 @@ function initializeApp() {
     function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
 
     function updateApiStatus(isKeySet) {
-        if (dom.apiStatusLight) {
-            dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
-        }
+        if (dom.apiStatusLight) { dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red'; }
     }
 
     function updateApiKeySettingsUI(isKeySet) {
@@ -297,9 +277,7 @@ function initializeApp() {
         if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
         });
-        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => {
-            if (confirm("Start a new script?")) { startNewScriptWorkflow(); }
-        });
+        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => { if (confirm("Start a new script?")) { startNewScriptWorkflow(); } });
         if (dom.saveScriptBtn) dom.saveScriptBtn.addEventListener('click', () => {
              const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
@@ -318,17 +296,12 @@ function initializeApp() {
             }
             openModal(dom.settingsModal);
         });
-        if (dom.myScriptsBtn) dom.myScriptsBtn.addEventListener('click', () => {
-            renderScriptVault();
-            openModal(dom.scriptVaultModal);
-        });
+        if (dom.myScriptsBtn) dom.myScriptsBtn.addEventListener('click', () => { renderScriptVault(); openModal(dom.scriptVaultModal); });
         if (dom.saveApiKeyBtn) dom.saveApiKeyBtn.addEventListener('click', () => {
             const key = dom.apiKeyInput.value.trim();
             if (key) { saveApiKey(key); updateApiStatus(true); updateApiKeySettingsUI(true); closeModal(dom.settingsModal); }
         });
-        if (dom.deleteApiKeyBtn) dom.deleteApiKeyBtn.addEventListener('click', () => {
-            if (confirm("Delete API Key?")) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); }
-        });
+        if (dom.deleteApiKeyBtn) dom.deleteApiKeyBtn.addEventListener('click', () => { if (confirm("Delete API Key?")) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); } });
         const saveProfileBtn = document.getElementById('save-profile-btn');
         if (saveProfileBtn) {
             saveProfileBtn.addEventListener('click', () => {
@@ -339,16 +312,9 @@ function initializeApp() {
                 closeModal(dom.settingsModal);
             });
         }
-        document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
-        });
-        if (dom.closeWelcomeBtn) dom.closeWelcomeBtn.addEventListener('click', () => {
-            closeModal(dom.welcomeModal);
-            setWelcomeGuideSeen();
-        });
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) { closeModal(event.target); }
-        });
+        document.querySelectorAll('.close-btn').forEach(btn => { btn.addEventListener('click', () => closeModal(btn.closest('.modal'))); });
+        if (dom.closeWelcomeBtn) dom.closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); });
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
     }
 
     function bindVaultActions() {
