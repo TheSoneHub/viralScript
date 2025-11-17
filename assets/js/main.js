@@ -3,10 +3,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const accessGate = document.getElementById('access-gate');
     const appContainer = document.querySelector('.app-container');
-    const emailInput = document.getElementById('access-code-input'); // Re-using old ID for now
     const enterAppBtn = document.getElementById('enter-app-btn');
     const errorMessage = document.getElementById('error-message');
-
+    const emailInput = document.getElementById('access-email-input'); // CORRECT ID
     // --- 1. ACCESS GATE & AUTHENTICATION ---
 
     /**
