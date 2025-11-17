@@ -180,6 +180,16 @@ function initializeApp() {
     function extractJSON(text) {
         if (!text || typeof text !== 'string') return null;
         let candidate = text.trim();
+        // Decode HTML and strip tags (handles <pre><code> wrappers or escaped entities)
+        try {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = candidate;
+            candidate = (tmp.textContent || tmp.innerText || candidate).trim();
+        } catch (e) {
+            // ignore DOM parsing errors and continue with original text
+        }
+        // Remove zero-width and non-printing characters that sometimes wrap model output
+        candidate = candidate.replace(/\u200B|\uFEFF/g, '').trim();
         // If JSON is inside triple backticks (```json or ```), extract inner content
         const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
         if (fenceMatch && fenceMatch[1]) candidate = fenceMatch[1].trim();
@@ -188,12 +198,12 @@ function initializeApp() {
         const startIndex = candidate.indexOf('{');
         const endIndex = candidate.lastIndexOf('}');
         if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
-        const jsonString = candidate.substring(startIndex, endIndex + 1);
+        let jsonString = candidate.substring(startIndex, endIndex + 1);
         try { return JSON.parse(jsonString); }
         catch (error) {
-            // Try a relaxed parse: replace single quotes with double quotes for common formatting mistakes
+            // Try a relaxed parse: decode HTML entities already done; attempt to fix common issues
             try {
-                const relaxed = jsonString.replace(/\n/g, ' ').replace(/'/g, '"');
+                const relaxed = jsonString.replace(/\n/g, ' ').replace(/\t/g, ' ').replace(/'/g, '"');
                 return JSON.parse(relaxed);
             } catch (e) {
                 return null;
