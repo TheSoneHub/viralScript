@@ -85,8 +85,12 @@ async function generateChatResponse(history, signal) {
     }
 }
 
+// /assets/js/ai.js
+
+// ... (Other functions remain the same) ...
+
 /**
- * Generates the script draft based on the conversation history.
+ * Generates the script draft, now with a stronger emphasis on cohesion.
  * @param {Array<object>} history - The full chat history.
  * @param {AbortSignal} signal - The AbortSignal for the request.
  * @returns {Promise<object|null>} A parsed JSON object of the script or null if failed.
@@ -104,8 +108,10 @@ async function generateScriptFromHistory(history, signal) {
         ---
         ${conversationSummary}
         ---
+        
+        **CRITICAL REQUIREMENT:** The entire script must be strategically cohesive. The Hook must make a promise that the Body fulfills. The value in the Body must create a natural transition to the Call to Action. All three parts must feel like a single, unified message.
 
-        Your task is to respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks. Your entire response must be ONLY the JSON object itself.
+        Your task is to respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks.
 
         The JSON structure MUST be:
         {
@@ -115,23 +121,14 @@ async function generateScriptFromHistory(history, signal) {
           "scenes": [
             {
               "scene_id": "SCENE 1: THE HOOK",
-              "timecode": "0:00 - 0:08",
-              "visuals": "A description of what should be on screen.",
-              "audio_type": "e.g., Voiceover (Professional Tone)",
               "script_burmese": "The Burmese script for this scene."
             },
             {
               "scene_id": "SCENE 2: THE BODY/VALUE",
-              "timecode": "0:09 - 0:45",
-              "visuals": "A description of what should be on screen.",
-              "audio_type": "Voiceover",
               "script_burmese": "The Burmese script for this scene. Use \\n for line breaks."
             },
             {
               "scene_id": "SCENE 3: THE CALL TO ACTION",
-              "timecode": "0:46 - 0:55",
-              "visuals": "A description of what should be on screen.",
-              "audio_type": "Voiceover",
               "script_burmese": "The Burmese script for the CTA."
             }
           ]
@@ -181,33 +178,37 @@ async function reviseScriptPart(part, currentText, instruction, signal) {
     }
 }
 
+// /assets/js/ai.js
+
+// ... (Other functions remain the same) ...
+
 /**
- * Performs a holistic analysis of the entire script.
+ * Performs a holistic analysis AND suggests a concrete fix for the weakest part.
  * @param {string} fullScript - The complete script as a single string.
  * @param {AbortSignal} signal - The AbortSignal for the request.
- * @returns {Promise<string>} A formatted Markdown analysis or an error message.
+ * @returns {Promise<string|null>} A formatted Markdown analysis with a suggested repair.
  */
-async function performFullAnalysis(fullScript, signal) {
+async function performFullScriptAnalysis(fullScript, signal) {
     const prompt = `
-        **MODE: FULL SCRIPT ANALYSIS**
-        You are a "Script Strategist." Perform a holistic review of the user's script, focusing on the strategic connection between the parts.
+        **MODE: STRATEGIC ANALYSIS & REPAIR**
+        You are a "Script Strategist." Your task is to perform a holistic review of the user's complete script, identify the single biggest strategic weakness, and proactively rewrite that part to fix the script's cohesion.
 
-        **Full Script:**
+        **Full Script to Analyze:**
         ---
         ${fullScript}
         ---
 
-        **Analysis & Response Format:**
-        1.  **Hook-Body Promise:** Does the Hook promise what the Body delivers?
-        2.  **Body-CTA Connection:** Does the Body logically lead to the CTA?
-        3.  **Overall Cohesion:** Does the script feel like a unified message?
+        **Your Analysis & Repair Process:**
+        1.  **Analyze Cohesion:** Critically examine the connections: Does the Hook's promise get fulfilled in the Body? Does the Body's value logically lead to the CTA?
+        2.  **Identify Weakest Link:** Determine which part (Hook, Body, or CTA) is the primary reason for any strategic disconnect.
+        3.  **Rewrite the Weak Part:** Rewrite ONLY the identified weak part to perfectly align with the other two parts, making the entire script seamless.
 
-        **Your Response Format:**
-        - Respond in professional Burmese using Markdown.
-        - Start with "Full Script Analysis Report."
-        - For each point, provide a rating (✅ Strong, 🟡 Medium, 🔴 Weak) and a one-sentence explanation.
-        - Add a "Recommendation" section identifying the single biggest weakness.
-        - End with a "Conversation Starter" - an open-ended question to engage the user on fixing the weakness.
+        **Your Response Format (MUST FOLLOW STRICTLY):**
+        - You must respond in professional Burmese using Markdown.
+        - Start with a main heading: "### 📜 Script Analysis & Repair"
+        - **Analysis Section:** Under a subheading "**تحليل:**", provide a very brief, one-sentence summary of the main issue.
+        - **Repair Section:** Under a subheading "**ပြုပြင်မှု:**", state which part you rewrote and why. For example: "Hook နှင့် Body အချိတ်အဆက် ပိုကောင်းစေရန် Body ကို အသစ်ပြန်လည် ရေးသားထားပါသည်။"
+        - **The Fix:** Provide the newly rewritten text under a clear label like "**New Body:**" or "**New Hook:**". Only show the new text for the part you fixed.
     `;
     const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
