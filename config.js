@@ -1,15 +1,21 @@
 // /config.js
 
-// --- Access Configuration ---
-// This is a LIST of secret codes that can be used to access the application.
-// You can add as many codes as you want inside the square brackets [].
-// Each code MUST be in quotes "" and separated by a comma ,
+/**
+ * App Configuration
+ * -----------------
+ * This file contains the core settings for the ViralScript application.
+ */
 
-const ACCESS_CODES = [
-    "VIRALSCRIPT2024_ADMIN",   // Your personal master code
-    "BETA_TESTER_001",        // Code for User 1
-    "CLIENT_PROJECT_XYZ",     // Code for User 2
-    "FRIEND_ACCESS_ALPHA"     // Code for User 3
-    // Add a new line with a new code for each new user.
-    // "NEW_USER_CODE"
-];
+// --- Access Management ---
+// This URL points to the Google Apps Script that securely validates user emails
+// by checking them against a private Google Sheet.
+const EMAIL_VALIDATION_API_URL = "https://script.google.com/macros/s/AKfycbxqR0-ULXX2REtZV3AF4HU9ztQaPih_V0WqdfzrnI9j1JmQsOIG3RpC2jfl7xEUMBHL-A/exec";
+
+
+// --- AI Model Configuration ---
+// Default settings for the generative AI model.
+const AI_DEFAULTS = {
+  // Controls the "creativity" or randomness of the AI's responses.
+  // Lower is more focused (0.2), higher is more creative (0.9).
+  temperature: 0.7,
+};

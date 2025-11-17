@@ -1,67 +1,85 @@
 // /assets/js/hookbank.js
 
-// This function initializes the entire Hook Bank feature
+/**
+ * Initializes the inspiration bank modals (Hook Bank, CTA Bank).
+ * This function fetches the corresponding JSON data and sets up the necessary
+ * event listeners for populating the script editor.
+ */
 function initializeHookBank() {
-    const hookBankList = document.getElementById('hook-bank-list');
-    const hookInput = document.getElementById('hook-input');
+    // --- Configuration for all inspiration banks ---
+    const banks = [
+        {
+            listEl: document.getElementById('hook-bank-list'),
+            targetTextarea: document.getElementById('hook-input'),
+            modalEl: document.getElementById('hook-bank-modal'),
+            jsonFile: 'hooks.json',
+            dataKey: 'hooks',
+        },
+        {
+            listEl: document.getElementById('cta-bank-list'),
+            targetTextarea: document.getElementById('cta-input'),
+            modalEl: document.getElementById('cta-bank-modal'),
+            jsonFile: 'cta_bank.json',
+            dataKey: 'ctas',
+        }
+    ];
 
-    if (!hookBankList || !hookInput) {
-        console.error("Hook Bank elements not found in the DOM.");
-        return;
-    }
+    // --- Generic function to fetch and render data ---
+    const fetchAndRender = async (bank) => {
+        try {
+            const response = await fetch(bank.jsonFile);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const categories = await response.json();
 
-    // 1. Fetch and render the hooks
-    fetchAndRenderHooks(hookBankList);
+            bank.listEl.innerHTML = ''; // Clear previous content
+            
+            categories.forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'hook-category';
+                categoryDiv.innerHTML = `<h3>${category.category}</h3>`;
+                
+                category[bank.dataKey].forEach(itemText => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'hook-item';
+                    itemDiv.textContent = itemText;
+                    categoryDiv.appendChild(itemDiv);
+                });
+                bank.listEl.appendChild(categoryDiv);
+            });
 
-    // 2. Add a single event listener to the container (Event Delegation)
-    hookBankList.addEventListener('click', (event) => {
+        } catch (error) {
+            console.error(`Failed to load inspiration bank from ${bank.jsonFile}:`, error);
+            bank.listEl.innerHTML = `<p style="color: var(--danger-color);">Inspiration Bank could not be loaded.</p>`;
+        }
+    };
+
+    // --- Generic function to handle item selection ---
+    const handleSelection = (bank, event) => {
         const clickedItem = event.target.closest('.hook-item');
         if (clickedItem) {
-            const selectedHook = clickedItem.textContent;
-            hookInput.value = selectedHook; // Insert into hook textarea
-            hookInput.focus(); // Focus on the textarea
+            const selectedText = clickedItem.textContent;
+            bank.targetTextarea.value = selectedText;
+            bank.targetTextarea.focus();
             
-            // Add a subtle animation to show it's been copied
-            hookInput.style.transition = 'all 0.1s ease-in-out';
-            hookInput.style.transform = 'scale(1.02)';
+            // Close the modal after selection
+            bank.modalEl.style.display = 'none';
+            
+            // Visual feedback
+            bank.targetTextarea.style.transition = 'all 0.1s ease-in-out';
+            bank.targetTextarea.style.transform = 'scale(1.02)';
             setTimeout(() => {
-                hookInput.style.transform = 'scale(1)';
-            }, 100);
+                bank.targetTextarea.style.transform = 'scale(1)';
+            }, 150);
+        }
+    };
+
+    // --- Initialize each bank ---
+    banks.forEach(bank => {
+        if (bank.listEl && bank.targetTextarea && bank.modalEl) {
+            fetchAndRender(bank);
+            bank.listEl.addEventListener('click', (event) => handleSelection(bank, event));
+        } else {
+            console.error(`Elements for an inspiration bank are missing. Check IDs in index.html.`);
         }
     });
-}
-
-// Helper function to fetch data from hooks.json and build the HTML
-async function fetchAndRenderHooks(container) {
-    try {
-        const response = await fetch('hooks.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const categories = await response.json();
-        
-        container.innerHTML = ''; // Clear existing list
-        
-        categories.forEach(category => {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'hook-category';
-            
-            const categoryTitle = document.createElement('h3');
-            categoryTitle.textContent = category.category;
-            categoryDiv.appendChild(categoryTitle);
-            
-            category.hooks.forEach(hookText => {
-                const hookItem = document.createElement('div');
-                hookItem.className = 'hook-item';
-                hookItem.textContent = hookText;
-                categoryDiv.appendChild(hookItem);
-            });
-            
-            container.appendChild(categoryDiv);
-        });
-        
-    } catch (error) {
-        console.error("Failed to load hook bank:", error);
-        container.innerHTML = `<p style="color: var(--danger-color);">Hook Bank ကို ဖွင့်မရပါ။ hooks.json file ကို စစ်ဆေးပါ။</p>`;
-    }
 }

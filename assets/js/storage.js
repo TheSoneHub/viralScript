@@ -9,10 +9,7 @@
  * @param {string} key - The API key to save.
  */
 function saveApiKey(key) {
-    if (!key) {
-        console.error("Attempted to save an empty API key.");
-        return;
-    }
+    if (!key) return;
     try {
         localStorage.setItem("gemini_api_key", btoa(key));
     } catch (e) {
@@ -29,7 +26,7 @@ function getApiKey() {
         const encodedKey = localStorage.getItem("gemini_api_key");
         return encodedKey ? atob(encodedKey) : null;
     } catch (e) {
-        console.error("Failed to retrieve or decode API key from localStorage:", e);
+        console.error("Failed to retrieve or decode API key:", e);
         return null;
     }
 }
@@ -41,7 +38,7 @@ function deleteApiKey() {
     try {
         localStorage.removeItem("gemini_api_key");
     } catch (e) {
-        console.error("Failed to delete API key from localStorage:", e);
+        console.error("Failed to delete API key:", e);
     }
 }
 
@@ -56,21 +53,20 @@ function saveChatHistory(history) {
     try {
         localStorage.setItem("viralscript_chat_history", JSON.stringify(history));
     } catch (e) {
-        console.error("Failed to save chat history to localStorage:", e);
-        // This can happen if the history is too large for localStorage.
+        console.error("Failed to save chat history:", e);
     }
 }
 
 /**
  * Retrieves the chat conversation history from localStorage.
- * @returns {Array<object>} The chat history array, or an empty array if none exists or an error occurs.
+ * @returns {Array<object>} The chat history array, or an empty array if none exists.
  */
 function getChatHistory() {
     try {
         const historyJson = localStorage.getItem("viralscript_chat_history");
         return historyJson ? JSON.parse(historyJson) : [];
     } catch (e) {
-        console.error("Failed to retrieve or parse chat history from localStorage:", e);
+        console.error("Failed to parse chat history:", e);
         return [];
     }
 }
@@ -82,7 +78,7 @@ function deleteChatHistory() {
     try {
         localStorage.removeItem("viralscript_chat_history");
     } catch (e) {
-        console.error("Failed to delete chat history from localStorage:", e);
+        console.error("Failed to delete chat history:", e);
     }
 }
 
@@ -91,14 +87,14 @@ function deleteChatHistory() {
 
 /**
  * Retrieves all saved scripts from localStorage.
- * @returns {Array<object>} An array of script objects.
+ * @returns {Array<object>} An array of script objects, sorted with the newest first.
  */
 function getSavedScripts() {
     try {
         const scriptsJson = localStorage.getItem('viralscript_vault');
         return scriptsJson ? JSON.parse(scriptsJson) : [];
     } catch (e) {
-        console.error("Failed to retrieve scripts from localStorage:", e);
+        console.error("Failed to retrieve scripts:", e);
         return [];
     }
 }
@@ -111,30 +107,28 @@ function getSavedScripts() {
 function saveScript(scriptObject) {
     try {
         const scripts = getSavedScripts();
-        // Add the new script to the beginning of the array so it appears at the top of the list.
-        scripts.unshift(scriptObject);
+        scripts.unshift(scriptObject); // Add new script to the beginning
         localStorage.setItem('viralscript_vault', JSON.stringify(scripts));
         return true;
     } catch (e) {
-        console.error("Failed to save script to localStorage:", e);
+        console.error("Failed to save script:", e);
         return false;
     }
 }
 
 /**
  * Deletes a script from the vault by its unique ID.
- * @param {number} scriptId - The ID (timestamp) of the script to delete.
+ * @param {number} scriptId - The ID of the script to delete.
  * @returns {boolean} True on success, false on failure.
  */
 function deleteScript(scriptId) {
     try {
         let scripts = getSavedScripts();
-        // Filter out the script with the matching ID.
         scripts = scripts.filter(script => script.id !== scriptId);
         localStorage.setItem('viralscript_vault', JSON.stringify(scripts));
         return true;
     } catch (e) {
-        console.error("Failed to delete script from localStorage:", e);
+        console.error("Failed to delete script:", e);
         return false;
     }
 }

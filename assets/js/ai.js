@@ -3,8 +3,39 @@
 const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
 /**
- * Creates the core system instruction that defines the AI's identity and operational modes.
- * This is the foundational prompt for all interactions.
+ * A reusable fetch function for the Gemini API.
+ * @param {object} requestBody - The body of the request to send to the API.
+ * @param {AbortSignal} signal - An AbortSignal to allow cancelling the request.
+ * @returns {Promise<object>} The JSON response from the API.
+ */
+async function fetchFromApi(requestBody, signal) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        throw new Error("API_KEY_MISSING");
+    }
+
+    const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: signal, // Pass the signal to the fetch request
+    });
+
+    if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.candidates || data.candidates.length === 0) {
+        // This can happen due to safety settings or an empty response
+        throw new Error("AI response was blocked or empty.");
+    }
+    
+    return data;
+}
+
+/**
+ * Creates the core system instruction that defines the AI's identity.
  * @returns {object} A Gemini-formatted instruction object.
  */
 function getSystemInstruction() {
@@ -31,35 +62,26 @@ function getSystemInstruction() {
 /**
  * Handles the general "Discovery Mode" conversation.
  * @param {Array<object>} history - The full chat history.
- * @returns {Promise<string|null>} The AI's next question or a special token.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
+ * @returns {Promise<string>} The AI's next question or a special token.
  */
-async function generateChatResponse(history) {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
-    }
-
+async function generateChatResponse(history, signal) {
     const systemInstruction = getSystemInstruction();
     const requestBody = {
         contents: [systemInstruction, ...history]
     };
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI response was blocked or empty.");
-        }
+        const data = await fetchFromApi(requestBody, signal);
         return data.candidates[0].content.parts[0].text;
-
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Chat response generation was aborted.');
+            return 'Generation stopped.';
+        }
+        if (error.message === "API_KEY_MISSING") {
+             return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
+        }
         console.error("Failed to generate chat response:", error);
         return "AI နှင့် ဆက်သွယ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။ ခဏအကြာတွင် ထပ်မံကြိုးစားကြည့်ပါ။";
     }
@@ -68,52 +90,41 @@ async function generateChatResponse(history) {
 /**
  * Generates the script draft based on the conversation history.
  * @param {Array<object>} history - The full chat history.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
  * @returns {Promise<object|null>} A parsed JSON object of the script or null if failed.
  */
-async function generateScriptFromHistory(history) {
-    const apiKey = getApiKey();
-    if (!apiKey) return null;
-
+async function generateScriptFromHistory(history, signal) {
     const conversationSummary = history
         .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.parts[0].text}`)
         .join('\n');
 
     const prompt = `
         **MODE: GENERATION**
-        You are a World-Class Viral Script Writer. Based on the following conversation summary, identify the user's Core Pillars (Objective, Audience, Problem, Value, Tone, CTA) and create a powerful short-form video script.
+        You are a World-Class Viral Script Writer. Based on the following conversation summary, create a powerful short-form video script.
 
         **Conversation Summary:**
         ---
         ${conversationSummary}
         ---
 
-        Your task is to generate a script and respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks around the JSON. Your entire response must be ONLY the JSON object itself.
+        Your task is to generate a script and respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks. Your entire response must be ONLY the JSON object itself.
 
         The JSON structure MUST be:
         {
           "hook": "Your generated hook text here.",
-          "body": "Your generated body text here. Use \\n for line breaks to ensure good pacing.",
+          "body": "Your generated body text here. Use \\n for line breaks for pacing.",
           "cta": "Your generated call to action here."
         }
     `;
+    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
+        const data = await fetchFromApi(requestBody, signal);
         let responseText = data.candidates[0].content.parts[0].text;
-        
         responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
         return JSON.parse(responseText);
-
     } catch (error) {
+        if (error.name === 'AbortError') console.log('Script generation was aborted.');
         console.error("Failed to generate or parse script:", error);
         return null;
     }
@@ -124,12 +135,10 @@ async function generateScriptFromHistory(history) {
  * @param {string} part - The part to revise ('hook', 'body', or 'cta').
  * @param {string} currentText - The current text of that part.
  * @param {string} instruction - The user's instruction for revision.
- * @returns {Promise<string|null>} The revised text or null if failed.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
+ * @returns {Promise<string>} The revised text. Returns original text on failure.
  */
-async function reviseScriptPart(part, currentText, instruction) {
-    const apiKey = getApiKey();
-    if (!apiKey) return currentText;
-
+async function reviseScriptPart(part, currentText, instruction, signal) {
     const prompt = `
         **MODE: EDITING**
         You are a Script Doctor. Revise the following script part based on the user's instruction.
@@ -137,161 +146,125 @@ async function reviseScriptPart(part, currentText, instruction) {
         - **Current Text:** "${currentText}"
         - **User's Instruction:** "${instruction}"
         
-        Respond ONLY with the newly revised text. Do not add any extra words, explanations, or quotes. The response should be pure text.
+        Respond ONLY with the newly revised text. Do not add any extra words, explanations, or quotes.
     `;
-    
+    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
+        const data = await fetchFromApi(requestBody, signal);
         return data.candidates[0].content.parts[0].text.trim();
-
     } catch (error) {
+        if (error.name === 'AbortError') console.log('Script revision was aborted.');
         console.error("Failed to revise script part:", error);
         return currentText; // Return original text on failure
     }
 }
 
 /**
- * Performs a holistic analysis of the entire script for strategic cohesion.
- * @param {string} fullScript - The complete script (Hook, Body, CTA) as a single string.
- * @returns {Promise<string|null>} A formatted Markdown analysis or an error message.
+ * Performs a holistic analysis of the entire script.
+ * @param {string} fullScript - The complete script as a single string.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
+ * @returns {Promise<string>} A formatted Markdown analysis or an error message.
  */
-async function performFullAnalysis(fullScript) {
-    const apiKey = getApiKey();
-    if (!apiKey) return "API Key မထည့်သွင်းရသေးပါ။";
-
+async function performFullAnalysis(fullScript, signal) {
     const prompt = `
         **MODE: FULL SCRIPT ANALYSIS**
-        You are a "Script Strategist." Your task is to perform a holistic review of the user's complete script. Do not correct grammar; instead, focus on the strategic connection between the parts.
+        You are a "Script Strategist." Perform a holistic review of the user's script, focusing on the strategic connection between the parts.
 
-        **Full Script to Analyze:**
+        **Full Script:**
         ---
         ${fullScript}
         ---
 
-        **Your Analysis Process & Response Format:**
-        1.  **Hook-Body Promise:** Does the Hook make a promise that the Body actually fulfills?
-        2.  **Body-CTA Connection:** Does the value provided in the Body logically lead to the action requested in the CTA?
-        3.  **Overall Cohesion:** Does the script feel like a single, unified message with a consistent tone?
+        **Analysis & Response Format:**
+        1.  **Hook-Body Promise:** Does the Hook promise what the Body delivers?
+        2.  **Body-CTA Connection:** Does the Body logically lead to the CTA?
+        3.  **Overall Cohesion:** Does the script feel like a unified message?
 
         **Your Response Format:**
-        -   You must respond in professional Burmese using Markdown.
-        -   Start with a structured "Full Script Analysis Report."
-        -   For each of the three points above, provide a rating (✅ Strong, 🟡 Medium, or 🔴 Weak) and a brief one-sentence explanation.
-        -   After the report, provide a "Recommendation" section identifying the single biggest strategic weakness.
-        -   Finally, end with a "Conversation Starter" - an open-ended question to engage the user in a collaborative discussion on how to fix the weakness.
+        - Respond in professional Burmese using Markdown.
+        - Start with "Full Script Analysis Report."
+        - For each point, provide a rating (✅ Strong, 🟡 Medium, 🔴 Weak) and a one-sentence explanation.
+        - Add a "Recommendation" section identifying the single biggest weakness.
+        - End with a "Conversation Starter" - an open-ended question to engage the user on fixing the weakness.
     `;
+    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
+        const data = await fetchFromApi(requestBody, signal);
         return data.candidates[0].content.parts[0].text;
-
     } catch (error) {
+        if (error.name === 'AbortError') console.log('Full analysis was aborted.');
         console.error("Failed to perform full analysis:", error);
         return "Script တစ်ခုလုံးကို သုံးသပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။";
     }
 }
 
 /**
- * "Watches" a viral video link, deconstructs its formula, and offers to apply it to a new topic.
+ * Deconstructs a viral video's formula from a URL.
  * @param {string} videoUrl - The URL of the video to analyze.
- * @returns {Promise<string|null>} A formatted Markdown report and incubation question.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
+ * @returns {Promise<string>} A formatted Markdown report.
  */
-async function deconstructViralVideo(videoUrl) {
-    const apiKey = getApiKey();
-    if (!apiKey) return "API Key မထည့်သွင်းရသေးပါ။";
-
+async function deconstructViralVideo(videoUrl, signal) {
     const prompt = `
         **MODE: VIRAL DECONSTRUCTOR**
-        You are a "Viral Content Analyst." You have the ability to analyze video links from platforms like TikTok, YouTube Shorts, and Facebook Reels. Your task is to "watch" the provided video, deconstruct its viral formula, and then offer to apply that formula to the user's topic.
+        You are a "Viral Content Analyst." Analyze the provided video link and deconstruct its viral formula.
 
-        **Video URL to Analyze:** ${videoUrl}
+        **Video URL:** ${videoUrl}
 
-        **Your Analysis Process & Response Format:**
+        **Analysis & Response Format:**
         1.  Start with a confirmation: "သင်ပို့လိုက်တဲ့ video ကို ခွဲခြမ်းစိတ်ဖြာပြီးပါပြီ။ ဒါကတော့ သူ့ရဲ့ 'Viral DNA' ပါ:"
         2.  Create a "Deconstruction Report" using Markdown.
-        3.  **Hook:** Identify the hook and classify its type in parentheses (e.g., Curiosity Hook, Pain-based Hook).
-        4.  **Core Message (Body):** Briefly summarize the value delivered in the video.
-        5.  **CTA:** Identify the Call to Action and classify its type.
-        6.  **Viral Strategy:** This is the most important part. Identify the underlying psychological principle or content strategy that made this video successful. Give the strategy a name (e.g., "Gatekeeping Reversal," "Pattern Interrupt," "Us vs. Them Narrative"). Explain in one sentence why it works.
-        7.  **Incubation Question:** After the report, you MUST ask a proactive, engaging follow-up question. The question should be: "ဒီ '[Strategy Name]' strategy က တော်တော် အစွမ်းထက်ပါတယ်။ **ဒီ formula ကိုပဲ သုံးပြီး၊ Boss ဖန်တီးချင်တဲ့ topic အသစ်တစ်ခုနဲ့ ပေါင်းစပ်ပြီး script အသစ်တစ်ခု အခုပဲ ဖန်တီးကြည့်ကြမလား?**"
+        3.  **Hook:** Identify the hook and its type (e.g., Curiosity, Pain-based).
+        4.  **Core Message (Body):** Summarize the value delivered.
+        5.  **CTA:** Identify the Call to Action.
+        6.  **Viral Strategy:** Identify the underlying psychological principle. Give it a name (e.g., "Gatekeeping Reversal," "Pattern Interrupt"). Explain why it works in one sentence.
+        7.  **Incubation Question:** End with the proactive question: "ဒီ '[Strategy Name]' strategy က တော်တော် အစွမ်းထက်ပါတယ်။ **ဒီ formula ကိုပဲ သုံးပြီး၊ Boss ဖန်တီးချင်တဲ့ topic အသစ်တစ်ခုနဲ့ ပေါင်းစပ်ပြီး script အသစ်တစ်ခု အခုပဲ ဖန်တီးကြည့်ကြမလား?**"
 
         Respond in professional Burmese.
     `;
+    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
+        const data = await fetchFromApi(requestBody, signal);
         return data.candidates[0].content.parts[0].text;
-
     } catch (error) {
+        if (error.name === 'AbortError') console.log('Video deconstruction was aborted.');
         console.error("Failed to deconstruct video:", error);
         return "Video link ကို သုံးသပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။ Link မှန်မမှန် စစ်ဆေးပေးပါ။";
     }
 }
 
-
 /**
- * Performs the "Pre-Flight Check" and returns a formatted Markdown analysis.
+ * Performs the "Pre-Flight Check" for a finished script.
  * @param {string} fullScript - The complete script as a single string.
- * @returns {Promise<string|null>} A formatted Markdown string or an error message.
+ * @param {AbortSignal} signal - The AbortSignal for the request.
+ * @returns {Promise<string>} A formatted Markdown string with performance notes.
  */
-async function performFinalCheck(fullScript) {
-    const apiKey = getApiKey();
-    if (!apiKey) return "API Key မထည့်သွင်းရသေးပါ။";
-
+async function performFinalCheck(fullScript, signal) {
     const prompt = `
         **MODE: FINAL CHECK**
-        The user's script is complete. Your task is to perform a "Pre-Flight Check" as a Performance Coach.
+        The script is complete. Perform a "Pre-Flight Check" as a Performance Coach.
         
-        **Full Script to Analyze:**
+        **Full Script:**
         ---
         ${fullScript}
         ---
         
-        **Your Instructions:**
+        **Instructions:**
         1.  Rewrite the entire script, embedding performance notes like "(Tone: Urgent)", "(Pause here)", "(Emphasize this word)" directly into the text.
         2.  After the script, provide a "Sanity Check" section.
-        3.  In the Sanity Check, estimate the speaking time in seconds.
-        4.  Analyze the script's Clarity and Energy Curve for its intended platform (assume TikTok/Reels).
-        5.  Format your entire response professionally using clear Burmese and Markdown. Start with a confident opening line.
+        3.  In the Sanity Check, estimate the speaking time in seconds and analyze its Clarity and Energy Curve for a short-form video platform.
+        4.  Format your entire response professionally in clear Burmese using Markdown.
     `;
-    
+    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+
     try {
-        const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "contents": [{"parts": [{"text": prompt }]}] })
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
+        const data = await fetchFromApi(requestBody, signal);
         return data.candidates[0].content.parts[0].text;
-
     } catch (error) {
+        if (error.name === 'AbortError') console.log('Final check was aborted.');
         console.error("Failed to perform final check:", error);
         return "Final Check ပြုလုပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။";
     }

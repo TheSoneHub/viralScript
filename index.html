@@ -1,158 +1,167 @@
 <!DOCTYPE html>
-<html lang="my">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ViralScript - AI Script Editor</title>
+    <title>ViralScript AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
-    <!-- Access Gate - Shown on page load -->
+
+    <div class="aurora-background"></div>
+
+    <!-- ACCESS GATE (Login Screen) -->
     <div id="access-gate">
         <div class="gate-content">
-            <h1>ViralScript 🧪</h1>
-            <p>Please enter the access code to continue.</p>
-            <div class="input-group">
-                <input type="password" id="access-code-input" placeholder="Access Code">
-                <button id="enter-app-btn">Enter</button>
-            </div>
-            <p id="error-message" class="error-message hidden">Invalid code. Please try again.</p>
+            <h1>ViralScript AI</h1>
+            <p>Enter your approved email address to access your AI Script Partner.</p>
+            <input type="email" id="access-email-input" placeholder="your.email@example.com" autocomplete="email">
+            <button id="enter-app-btn">Continue</button>
+            <p id="gate-error-message" class="gate-error-message hidden"></p>
         </div>
     </div>
 
-    <!-- Main Application Container - Hidden by default -->
+    <!-- MAIN APP CONTAINER -->
     <div class="app-container hidden">
-        <!-- Center Panel: Editor -->
-        <main class="editor-panel">
-            <header class="panel-header">
-                <div class="panel-title"><h1>ViralScript 🧪</h1></div>
+        <!-- Editor Panel (Left) -->
+        <div class="editor-panel">
+            <div class="panel-header">
+                <h1>Script Editor</h1>
                 <div class="header-actions">
-                    <button id="save-script-btn" class="header-action-btn secondary">💾 Save Script</button>
-                    <button id="copy-script-btn" class="header-action-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span>Copy Script</span>
+                    <button id="new-script-btn" class="header-action-btn secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>New</span>
                     </button>
-                </div>
-            </header>
-            <div class="script-wrapper">
-                <div id="hook-section" class="script-component">
-                    <div class="component-header">
-                        <h3>🎯 Hook</h3>
-                        <button id="hook-bank-btn" class="component-action-btn">💡 Hook Bank</button>
-                    </div>
-                    <textarea id="hook-input" placeholder="AI နှင့် စကားပြောပြီး သင်၏ script ကို ဖန်တီးပါ..."></textarea>
-                </div>
-                <div id="body-section" class="script-component">
-                    <h3>BODY</h3>
-                    <textarea id="body-input"></textarea>
-                </div>
-                <div id="cta-section" class="script-component">
-                     <div class="component-header">
-                        <h3>📣 Call to Action</h3>
-                        <button id="cta-bank-btn" class="component-action-btn">💡 CTA Bank</button>
-                    </div>
-                    <textarea id="cta-input"></textarea>
+                    <button id="save-script-btn" class="header-action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        <span>Save</span>
+                    </button>
+                    <button id="copy-script-btn" class="header-action-btn">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy</span>
+                    </button>
                 </div>
             </div>
-        </main>
-
-        <!-- Right Panel: AI Chat -->
-        <aside class="chat-panel">
-            <header class="panel-header chat-header">
-                <div class="ai-personality-selector">
-                    <label for="ai-personality">Coach Persona</label>
-                    <select id="ai-personality">
-                        <option value="Creative Coach">Creative Coach</option>
-                        <option value="Viral Editor">Viral Editor</option>
-                        <option value="Hook Analyzer">Hook Analyzer</option>
-                    </select>
+            <div class="script-wrapper">
+                <div class="script-component">
+                    <div class="component-header">
+                        <h3>Hook</h3>
+                        <button id="hook-bank-btn" class="component-action-btn">Inspiration</button>
+                    </div>
+                    <textarea id="hook-input" placeholder="AI will generate the hook here..."></textarea>
                 </div>
+                <div class="script-component">
+                    <div class="component-header"><h3>Body</h3></div>
+                    <textarea id="body-input" placeholder="AI will generate the body here..."></textarea>
+                </div>
+                <div class="script-component">
+                    <div class="component-header">
+                        <h3>Call to Action</h3>
+                        <button id="cta-bank-btn" class="component-action-btn">Inspiration</button>
+                    </div>
+                    <textarea id="cta-input" placeholder="AI will generate the CTA here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Panel (Right) -->
+        <div class="chat-panel">
+            <div class="panel-header">
+                <h1>AI Director</h1>
                 <div class="header-controls">
+                    <div id="api-status" class="status-light-red" title="API Key Required"></div>
                     <button id="my-scripts-btn" class="icon-btn" title="My Scripts">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
                     </button>
-                    <button id="clear-chat-btn" class="icon-btn" title="Clear Chat History">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                    <div id="api-status" class="status-light-red" title="API Key မထည့်ရသေးပါ"></div>
                     <button id="settings-btn" class="icon-btn" title="Settings">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </button>
+                    <button id="clear-chat-btn" class="icon-btn" title="Clear Chat & Restart">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
                 </div>
-            </header>
+            </div>
             <div id="ai-chat-history" class="chat-history"></div>
             <div class="chat-input-area">
                 <div class="input-wrapper">
                     <textarea id="chat-input" placeholder="AI နှင့် စကားပြောပါ..." rows="1"></textarea>
-                    <button id="send-chat-btn" title="Send Message">
+                    <button id="send-chat-btn" class="icon-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </div>
             </div>
-        </aside>
+        </div>
     </div>
-    
-    <!-- All Modals -->
+
+    <!-- MODALS -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
-            <button id="close-modal-btn" class="close-btn">&times;</button>
-            <h2>Settings</h2>
-            <div class="api-key-management">
-                <div id="api-key-entry-state">
-                    <div class="api-key-wrapper">
-                        <label for="api-key-input">Google Gemini API Key</label>
-                        <input type="password" id="api-key-input" placeholder="သင်၏ API key ကို ဤနေရာတွင် ထည့်ပါ">
-                        <button id="save-api-key-btn">Key ကို သိမ်းမည်</button>
-                        <p class="notice">🔒 သင်၏ API key ကို သင့် browser ထဲတွင်သာ လုံခြုံစွာ သိမ်းဆည်းထားပါမည်။</p>
-                    </div>
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <span id="close-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <div id="api-key-entry-state">
+                <div class="api-key-wrapper">
+                    <label for="api-key-input">Google Gemini API Key</label>
+                    <input type="password" id="api-key-input" placeholder="Enter your API key here...">
+                    <button id="save-api-key-btn" class="header-action-btn" style="width: 100%;">Save Key</button>
                 </div>
-                <div id="api-key-manage-state" class="hidden">
-                    <div class="api-key-wrapper">
-                        <label>Current API Key Status</label>
-                        <div class="key-status-display"><span>API Key ထည့်သွင်းပြီးဖြစ်ပါသည်။</span></div>
-                        <button id="delete-api-key-btn" class="danger">Key ကို ဖျက်မည်</button>
-                        <p class="notice">Key အသစ်ပြောင်းထည့်လိုပါက လက်ရှိ Key ကို အရင်ဖျက်ပါ။</p>
-                    </div>
-                </div>
+                <p class="notice">Your API key is stored securely in your browser's local storage and is never sent to our servers.</p>
+            </div>
+            <div id="api-key-manage-state" class="hidden">
+                 <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved and active.</p>
+                 <button id="delete-api-key-btn" class="header-action-btn secondary" style="width: 100%; background-color: var(--danger-color); color: white;">Delete API Key</button>
             </div>
         </div>
     </div>
-    
+
+    <!-- Hook Bank Modal -->
     <div id="hook-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
-            <button id="close-hook-modal-btn" class="close-btn">&times;</button>
-            <h2>📘 Viral Hook Bank</h2>
-            <p class="modal-subtitle">Idea ရဖို့ ဒီ hook တွေကို သုံးပါ။ နှိပ်လိုက်တာနဲ့ chat box ထဲရောက်သွားပါမယ်။</p>
+             <div class="modal-header">
+                <h2>Hook Inspiration Bank</h2>
+                <span id="close-hook-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <p class="modal-subtitle">Click any hook to copy it to your editor.</p>
             <div id="hook-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
     
+    <!-- CTA Bank Modal -->
     <div id="cta-bank-modal" class="modal">
         <div class="modal-content hook-bank-content">
-            <button id="close-cta-modal-btn" class="close-btn">&times;</button>
-            <h2>📣 CTA Bank</h2>
-            <p class="modal-subtitle">သင့်ရည်မှန်းချက်နဲ့ကိုက်ညီမယ့် CTA ကို ရွေးချယ်အသုံးပြုပါ။</p>
+             <div class="modal-header">
+                <h2>CTA Inspiration Bank</h2>
+                <span id="close-cta-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <p class="modal-subtitle">Click any CTA to copy it to your editor.</p>
             <div id="cta-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
     
+    <!-- Script Vault Modal -->
     <div id="script-vault-modal" class="modal">
-        <div class="modal-content hook-bank-content">
-            <button id="close-vault-modal-btn" class="close-btn">&times;</button>
-            <h2>💾 My Scripts</h2>
-            <p class="modal-subtitle">သင်သိမ်းဆည်းထားသော script များကို ဤနေရာတွင် ကြည့်ရှုနိုင်၊ ပြန်ဖွင့်နိုင်ပါသည်။</p>
+         <div class="modal-content hook-bank-content">
+             <div class="modal-header">
+                <h2>My Script Vault</h2>
+                <span id="close-vault-modal-btn" class="close-btn">&times;</span>
+            </div>
+            <p class="modal-subtitle">Load or delete your previously saved scripts.</p>
             <div id="script-vault-list" class="script-vault-list"></div>
         </div>
     </div>
-    
-    <!-- All Scripts -->
-    <script src="config.js"></script>
+
+    <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="config.js"></script>
     <script src="assets/js/storage.js"></script>
     <script src="assets/js/ai.js"></script>
+    <script src="assets/js/hookbank.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>

@@ -1,35 +1,39 @@
 [
     {
-        "category": "Engagement CTAs (Interaksiya'ga chorlash)",
+        "category": "Interaksiya'ga chorlash (Engagement)",
         "ctas": [
             "သင်ရော ဘယ်လိုထင်လဲ? Comment မှာ သင့်အမြင်ကို ဝေမျှပေးခဲ့ပါ။",
             "ဒီ video က သင့်အတွက် အကျိုးရှိခဲ့တယ်ဆိုရင် like & save လုပ်ထားဖို့ မမေ့နဲ့နော်။",
             "ဒီအကြောင်းအရာကို စိတ်ဝင်စားမယ့် သင့်သူငယ်ချင်းတစ်ယောက်ကို mention ခေါ်လိုက်ပါ။",
-            "Part 2 လိုချင်ရင် comment မှာ 'Next' လို့ ရေးခဲ့ပါ။"
+            "Part 2 လိုချင်ရင် comment မှာ 'Next' လို့ ရေးခဲ့ပါ။",
+            "ဒီထဲက ဘယ်အချက်က သင့်အတွက် အသစ်ဖြစ်ခဲ့လဲ? Comment မှာ ပြောပြခဲ့ပါ။"
         ]
     },
     {
-        "category": "Content CTAs (Tomoshabinlarni saqlab qolish)",
+        "category": "Tomoshabinlarni saqlab qolish (Audience Retention)",
         "ctas": [
             "ဒီလိုအသုံးဝင်တဲ့ video တွေ ထပ်ကြည့်ချင်ရင် follow လုပ်ထားလိုက်ပါ။",
             "ကျွန်တော့် profile ထဲက [Related Topic] playlist ကိုလည်း ဝင်ကြည့်ဖို့ မမေ့နဲ့နော်။",
-            "နောက်အပတ်မှာ တင်မယ့် [Future Topic] video ကို လက်မလွတ်စေဖို့ follow လုပ်ထားပါ။"
+            "နောက်အပတ်မှာ တင်မယ့် [Future Topic] video ကို လက်မလွတ်စေဖို့ follow လုပ်ထားပါ။",
+            "ဒီ series ရဲ့ အပိုင်းဟောင်းတွေကို ကျွန်တော့် profile မှာ ပြန်ကြည့်လို့ရပါတယ်။"
         ]
     },
     {
-        "category": "Action-Oriented CTAs (Harakatga yo'naltirilgan)",
+        "category": "Harakatga yo'naltirilgan (Action-Oriented)",
         "ctas": [
             "အသေးစိတ် အချက်အလက်တွေအတွက် ကျွန်တော့် profile က link ကို ဝင်ကြည့်လိုက်ပါ။",
             "ဒီ video ကို save လုပ်ထားပါ၊ နောက်ပိုင်း သင်ဒါကို ပြန်သုံးရပါလိမ့်မယ်။",
-            "Free Ebook/Checklist ရယူဖို့ ကျွန်တော့် Telegram channel ကို join ထားလိုက်ပါ။"
+            "Free Ebook/Checklist ရယူဖို့ ကျွန်တော့် bio က link ကို သွားပါ။",
+            "ကျွန်တော်သုံးထားတဲ့ tool တွေကို သိချင်ရင် bio က link မှာ ကြည့်နိုင်ပါတယ်။"
         ]
     },
     {
-        "category": "Urgency CTAs (Shoshilinchlik yaratish)",
+        "category": "Shoshilinchlik yaratish (Urgency)",
         "ctas": [
             "ဒီ offer က ၂၄ နာရီပဲ ရှိတော့မှာမို့ အခုပဲ ရယူလိုက်ပါ။",
             "နေရာ အရေအတွက် အကန့်အသတ်ရှိလို့ အမြန်ဆုံး စာရင်းပေးသွင်းလိုက်ပါ။",
-            "ဒီအခွင့်အရေးကို လက်လွတ်မခံပါနဲ့၊ နောက်တစ်ခါ ပြန်ရတော့မှာ မဟုတ်ဘူး။"
+            "ဒီအခွင့်အရေးကို လက်လွတ်မခံပါနဲ့၊ နောက်တစ်ခါ ပြန်ရတော့မှာ မဟုတ်ဘူး။",
+            "ဈေးမတက်ခင် အခုပဲ ဝယ်ထားလိုက်ပါ။"
         ]
     }
 ]
