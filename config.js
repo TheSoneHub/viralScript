@@ -9,7 +9,13 @@
 // --- Access Management ---
 // This URL points to the Google Apps Script that securely validates user emails
 // by checking them against a private Google Sheet.
-const EMAIL_VALIDATION_API_URL = "https://script.google.com/macros/s/AKfycbxqR0-ULXX2REtZV3AF4HU9ztQaPih_V0WqdfzrnI9j1JmQsOIG3RpC2jfl7xEUMBHL-A/exec";
+// /config.js
+
+// ... (other code) ...
+
+const EMAIL_VALIDATION_API_URL = "https://script.google.com/macros/s/AKfycbzFw-UFBT20qAlO7rh81iC4OyZabXo7oqhSZmpyQ3t3_kpGFITEKCF2IYKTBNepP5WHXQ/exec";
+
+// ... (other code) ...
 
 
 // --- AI Model Configuration ---
