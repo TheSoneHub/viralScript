@@ -53,26 +53,36 @@ function initializeHookBank() {
         }
     };
 
+    // /assets/js/hookbank.js
+
+// ... (The top part of the file remains the same) ...
+
     // --- Generic function to handle item selection ---
     const handleSelection = (bank, event) => {
         const clickedItem = event.target.closest('.hook-item');
         if (clickedItem) {
             const selectedText = clickedItem.textContent;
-            bank.targetTextarea.value = selectedText;
-            bank.targetTextarea.focus();
+            
+            // --- NEW LOGIC: Target the main chat input instead ---
+            const mainChatInput = document.getElementById('chat-input');
+            
+            // Construct a command-like message for the AI
+            mainChatInput.value = `Use this as the new ${bank.dataKey.replace('s', '')}: "${selectedText}"`;
+            mainChatInput.focus();
             
             // Close the modal after selection
             bank.modalEl.style.display = 'none';
             
-            // Visual feedback
-            bank.targetTextarea.style.transition = 'all 0.1s ease-in-out';
-            bank.targetTextarea.style.transform = 'scale(1.02)';
+            // Visual feedback for the chat input
+            mainChatInput.style.transition = 'all 0.1s ease-in-out';
+            mainChatInput.style.transform = 'scale(1.02)';
             setTimeout(() => {
-                bank.targetTextarea.style.transform = 'scale(1)';
+                mainChatInput.style.transform = 'scale(1)';
             }, 150);
         }
     };
-
+    
+// ... (The rest of the file remains the same) ...
     // --- Initialize each bank ---
     banks.forEach(bank => {
         if (bank.listEl && bank.targetTextarea && bank.modalEl) {

@@ -146,6 +146,13 @@ function initializeApp() {
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
     }
 
+// /assets/js/main.js
+
+// ... (all other functions remain the same) ...
+
+    /**
+     * Handles sending a message, now with Editor-to-AI sync.
+     */
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
@@ -160,15 +167,22 @@ function initializeApp() {
         try {
             let aiResponseText;
             const urlRegex = /^(https?:\/\/)/i;
-            const analysisTriggers = ["script သုံးသပ်ပေး", "full analysis", "အားလုံးကိုစစ်ပေး", "review script"];
+            const analysisTriggers = ["script သုံးသပ်ပေး", "full analysis", "အားလုံးကိုစစ်ပေး", "review script", "analyze script"];
             
-            if (urlRegex.test(userMessageText)) {
+            // --- NEW: Check if the user wants analysis based on the current editor content ---
+            if (analysisTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
+                // This will now use the latest text from the editor panels
+                aiResponseText = await handleFullScriptAnalysis(); 
+            
+            } else if (urlRegex.test(userMessageText)) {
                 aiResponseText = await deconstructViralVideo(userMessageText, state.stopGenerationController.signal);
-            } else if (analysisTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
-                aiResponseText = await handleFullScriptAnalysis();
+            
             } else if (userMessageText.toLowerCase().includes('final check')) {
+                // Final check should also use the latest editor content
                 aiResponseText = await handleFinalCheck();
+            
             } else {
+                // Handle other modes as usual
                 switch (state.appMode) {
                     case 'DISCOVERY':
                         const discoveryResponse = await generateChatResponse(state.chatHistory, state.stopGenerationController.signal);
@@ -201,6 +215,34 @@ function initializeApp() {
             setUiLoading(false);
         }
     }
+    
+    // --- Also, update handleFullScriptAnalysis and handleFinalCheck to read from the editor ---
+    
+    async function handleFinalCheck() {
+        state.appMode = 'FINAL_CHECK';
+        addMessageToChat({ role: 'model', text: "Script ကို နောက်ဆုံးအဆင့် စစ်ဆေးနေပါသည်..." });
+        
+        // **UPDATED:** Always read the latest script from the editor textareas
+        const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
+        
+        const finalCheckText = await performFinalCheck(fullScript, state.stopGenerationController.signal);
+        addMessageToChat({ role: 'model', text: "Script အသစ်တစ်ခု ထပ်မံဖန်တီးလိုပါက 'New Script' ခလုတ်ကို နှိပ်နိုင်ပါသည်။" });
+        return finalCheckText;
+    }
+
+    async function handleFullScriptAnalysis() {
+        state.appMode = 'ANALYZING';
+        addMessageToChat({ role: 'model', text: "ကောင်းပါပြီ။ Script တစ်ခုလုံးရဲ့ Cohesion ကို သုံးသပ်ပါမယ်။" });
+        
+        // **UPDATED:** Always read the latest script from the editor textareas
+        const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
+        
+        const analysisReport = await performFullAnalysis(fullScript, state.stopGenerationController.signal);
+        state.appMode = 'EDITING'; // Return to editing after analysis
+        return analysisReport;
+    }
+    
+// ... (all other functions remain the same) ...
 
 // /assets/js/main.js
 
