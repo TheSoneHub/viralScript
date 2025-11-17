@@ -28,6 +28,7 @@
     <!-- MAIN APP CONTAINER -->
     <div class="app-container hidden">
         <!-- Editor Panel (Left) -->
+<!-- Editor Panel (Left) -->
         <div class="editor-panel">
             <div class="panel-header">
                 <h1>Script Editor</h1>
@@ -52,18 +53,18 @@
                         <h3>Hook</h3>
                         <button id="hook-bank-btn" class="component-action-btn">Inspiration</button>
                     </div>
-                    <textarea id="hook-input" placeholder="AI will generate the hook here..."></textarea>
+                    <textarea id="hook-input" placeholder="Start a conversation with the AI Director to begin..."></textarea>
                 </div>
                 <div class="script-component">
                     <div class="component-header"><h3>Body</h3></div>
-                    <textarea id="body-input" placeholder="AI will generate the body here..."></textarea>
+                    <textarea id="body-input" placeholder="The AI will write the main part of your script here."></textarea>
                 </div>
                 <div class="script-component">
                     <div class="component-header">
                         <h3>Call to Action</h3>
                         <button id="cta-bank-btn" class="component-action-btn">Inspiration</button>
                     </div>
-                    <textarea id="cta-input" placeholder="AI will generate the CTA here..."></textarea>
+                    <textarea id="cta-input" placeholder="Your final call to action will appear here."></textarea>
                 </div>
             </div>
         </div>
@@ -100,7 +101,7 @@
     <!-- MODALS (The modal HTML can be copied from my previous messages, it has no errors) -->
     <!-- Settings Modal -->
 <!-- MODALS -->
-    <!-- Settings Modal -->
+<!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -108,7 +109,7 @@
                 <span id="close-modal-btn" class="close-btn">&times;</span>
             </div>
 
-            <!-- New User Profile Section -->
+            <!-- User Profile Section -->
             <div class="settings-section">
                 <h3>Your Profile</h3>
                 <p class="modal-subtitle" style="margin-top: 0.25rem; margin-bottom: 1rem;">
@@ -136,6 +137,11 @@
                         <input type="password" id="api-key-input" placeholder="Enter your API key here...">
                         <button id="save-api-key-btn" class="header-action-btn" style="width: 100%;">Save Key</button>
                     </div>
+                     <p class="notice">
+                        <strong>Privacy:</strong> Your API key is stored locally in your browser and is never sent to our servers.
+                        <br>
+                        <strong>Cost:</strong> You are responsible for any costs associated with your own API key usage.
+                    </p>
                 </div>
                 <div id="api-key-manage-state" class="hidden">
                      <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved and active.</p>
@@ -144,7 +150,6 @@
             </div>
         </div>
     </div>
-    <!-- (Other modals remain the same) -->
 
     <!-- Hook Bank Modal -->
     <div id="hook-bank-modal" class="modal">
@@ -181,6 +186,36 @@
             <div id="script-vault-list" class="script-vault-list"></div>
         </div>
     </div>
+
+    <!-- ... (Other modals are above this) ... -->
+
+    <!-- NEW: Welcome Guide Modal -->
+    <div id="welcome-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+             <div class="modal-header">
+                <h2>Welcome to ViralScript AI!</h2>
+            </div>
+            <p class="modal-subtitle" style="margin-top: -1rem; margin-bottom: 1.5rem;">Your new AI Creative Partner.</p>
+            
+            <div class="welcome-step">
+                <h4>1. Start with Your Idea</h4>
+                <p>In the "AI Director" chat, simply type the topic or idea for your video.</p>
+            </div>
+            <div class="welcome-step">
+                <h4>2. Choose Your Angle</h4>
+                <p>The AI will propose <strong>3 creative angles</strong>. Reply with the number you like (e.g., "Use angle 2").</p>
+            </div>
+            <div class="welcome-step">
+                <h4>3. Generate & Edit</h4>
+                <p>The AI will write the full script. You can then edit it yourself or ask the AI for revisions!</p>
+            </div>
+
+            <button id="close-welcome-btn" class="header-action-btn" style="width: 100%; margin-top: 2rem;">Got It, Let's Start!</button>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <!-- ... (script tags) ... -->
 
 
     <!-- SCRIPTS -->

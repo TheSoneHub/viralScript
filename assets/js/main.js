@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive version with all fixes
+// /assets/js/main.js - Definitive version with all features and fixes
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleEmailLogin() {
-        if (!emailInput || !enterAppBtn) return;
+        if (!emailInput || !enterAppBtn || enterAppBtn.disabled) return;
         const email = emailInput.value;
-        if (!email || enterAppBtn.disabled) return;
+        if (!email) return;
 
         enterAppBtn.disabled = true;
         enterAppBtn.textContent = 'Verifying...';
@@ -98,8 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     checkStoredSession();
 });
 
+
 // =================================================================
-// MAIN APP LOGIC
+// MAIN APP LOGIC - Runs only after successful authentication
 // =================================================================
 function initializeApp() {
     let state = {
@@ -138,14 +139,24 @@ function initializeApp() {
         ctaBankBtn: document.getElementById('cta-bank-btn'),
         ctaBankModal: document.getElementById('cta-bank-modal'),
         closeCtaModalBtn: document.getElementById('close-cta-modal-btn'),
+        welcomeModal: document.getElementById('welcome-modal'),
+        closeWelcomeBtn: document.getElementById('close-welcome-btn'),
     };
+
+    function showWelcomeGuideIfNeeded() {
+        if (!hasSeenWelcomeGuide()) {
+            openModal(dom.welcomeModal);
+        }
+    }
 
     function startNewScriptWorkflow() {
         state.appMode = 'DISCOVERY';
         state.chatHistory = [];
         dom.chatHistoryEl.innerHTML = '';
         clearEditor();
-        const firstQuestion = "ကြိုဆိုပါတယ်။ ဒီနေ့ ဘယ်လို short video content မျိုး ဖန်တီးချင်ပါသလဲ? Topic ဒါမှမဟုတ် ခေါင်းထဲရှိနေတဲ့ idea လေးကို ပြောပြပေးပါ။";
+        const firstQuestion = hasSeenWelcomeGuide()
+            ? "Welcome back! What is the topic for your next viral script?"
+            : "Welcome! To get started, type the topic for your video below.";
         addMessageToChat({ role: 'model', text: firstQuestion });
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
     }
@@ -176,8 +187,7 @@ function initializeApp() {
             } else if (userMessageText.toLowerCase().includes('final check')) {
                 aiResponseText = await handleFinalCheck();
             } else {
-                const discoveryResponse = await generateChatResponse(state.chatHistory);
-                aiResponseText = discoveryResponse;
+                aiResponseText = await generateChatResponse(state.chatHistory);
             }
 
             if (aiResponseText) {
@@ -185,8 +195,14 @@ function initializeApp() {
                 state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
             }
         } catch (error) {
-            console.error("Error during AI response:", error);
-            addMessageToChat({ role: 'model', text: 'An error occurred. Please try again.' });
+            console.error("Critical Error in handleSendMessage:", error);
+            let userFriendlyError = "An unexpected error occurred. Please try again.";
+            if (error.message === "API_KEY_MISSING") {
+                userFriendlyError = "Your API Key is missing. Please add it in Settings (⚙️).";
+            } else if (error.message === "API_KEY_INVALID") {
+                userFriendlyError = "Your API Key is invalid. Please check it in Settings (⚙️).";
+            }
+            addMessageToChat({ role: 'model', text: `**Error:** ${userFriendlyError}` });
         } finally {
             setUiLoading(false);
         }
@@ -194,24 +210,23 @@ function initializeApp() {
 
     async function generateFinalScript() {
         state.appMode = 'GENERATING';
-        addMessageToChat({ role: 'model', text: 'ရွေးချယ်ထားသော Angle အတွက် Script ကို ဖန်တီးပေးနေပါသည်...' });
+        addMessageToChat({ role: 'model', text: 'Excellent choice. Generating the full script based on that angle...' });
         setInputsReadOnly(true);
         const scriptJSON = await generateScriptFromHistory(state.chatHistory);
         if (scriptJSON && scriptJSON.scenes && scriptJSON.scenes.length > 0) {
             const scenes = scriptJSON.scenes;
-            const hook = scenes[0]?.script_burmese || '';
-            const cta = scenes[scenes.length - 1]?.script_burmese || '';
-            const bodyScenes = scenes.slice(1, -1);
-            const body = bodyScenes.map(scene => scene.script_burmese).join('\n\n').trim();
+            const hook = scenes.find(s => s.scene_id.includes("HOOK"))?.script_burmese || '';
+            const cta = scenes.find(s => s.scene_id.includes("CTA"))?.script_burmese || '';
+            const body = scenes.filter(s => s.scene_id.includes("BODY")).map(s => s.script_burmese).join('\n\n').trim();
             dom.hookInput.value = hook;
             dom.bodyInput.value = body;
             dom.ctaInput.value = cta;
-            const nextStepMessage = "Script အကြမ်းကို ဖန်တီးပြီးပါပြီ။ ပြင်ဆင်လိုပါက ပြောနိုင်ပါသည် (ဥပမာ: hook ကို ပိုတိုအောင်လုပ်ပါ)။";
+            const nextStepMessage = "The first draft is ready. You can now edit the text directly or ask me for revisions (e.g., 'make the hook shorter').";
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
         } else {
-            addMessageToChat({ role: 'model', text: 'Script ဖန်တီးရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။' });
+            addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try asking again.' });
             state.appMode = 'DISCOVERY';
         }
         setInputsReadOnly(false);
@@ -226,7 +241,7 @@ function initializeApp() {
         if (partToEdit) {
             const revisedText = await reviseScriptPart(partToEdit, currentText, instruction);
             document.getElementById(`${partToEdit}-input`).value = revisedText;
-            return `${partToEdit} ကို ပြင်ဆင်ပြီးပါပြီ။`;
+            return `The ${partToEdit} has been revised.`;
         }
         return await generateChatResponse(state.chatHistory);
     }
@@ -266,25 +281,13 @@ function initializeApp() {
         }
     }
 
-    function clearEditor() {
-        dom.hookInput.value = ''; dom.bodyInput.value = ''; dom.ctaInput.value = '';
-    }
-
-    function setInputsReadOnly(isReadOnly) {
-        dom.hookInput.readOnly = isReadOnly; dom.bodyInput.readOnly = isReadOnly; dom.ctaInput.readOnly = isReadOnly;
-    }
-
+    function clearEditor() { dom.hookInput.value = ''; dom.bodyInput.value = ''; dom.ctaInput.value = ''; }
+    function setInputsReadOnly(isReadOnly) { dom.hookInput.readOnly = isReadOnly; dom.bodyInput.readOnly = isReadOnly; dom.ctaInput.readOnly = isReadOnly; }
     function openModal(modalElement) { modalElement.style.display = 'block'; }
     function closeModal(modalElement) { modalElement.style.display = 'none'; }
     
-    function updateApiStatus(isKeySet) {
-        dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
-    }
-
-    function updateApiKeySettingsUI(isKeySet) {
-        dom.apiKeyEntryState.classList.toggle('hidden', isKeySet);
-        dom.apiKeyManageState.classList.toggle('hidden', !isKeySet);
-    }
+    function updateApiStatus(isKeySet) { dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red'; }
+    function updateApiKeySettingsUI(isKeySet) { dom.apiKeyEntryState.classList.toggle('hidden', isKeySet); dom.apiKeyManageState.classList.toggle('hidden', !isKeySet); }
 
     function renderScriptVault() {
         const scripts = getSavedScripts();
@@ -308,18 +311,13 @@ function initializeApp() {
                 e.preventDefault(); handleSendMessage();
             }
         });
-        dom.clearChatBtn.addEventListener('click', () => {
-            if (confirm('Clear chat and start over?')) { startNewScriptWorkflow(); }
-        });
-        dom.newScriptBtn.addEventListener('click', () => {
-            if (confirm('Start a new script?')) { startNewScriptWorkflow(); }
-        });
+        dom.clearChatBtn.addEventListener('click', () => { if (confirm('Clear chat and start over?')) { startNewScriptWorkflow(); } });
+        dom.newScriptBtn.addEventListener('click', () => { if (confirm('Start a new script?')) { startNewScriptWorkflow(); } });
         dom.settingsBtn.addEventListener('click', () => {
             const userProfile = getUserProfile();
             const brandInfoEl = document.getElementById('profile-brand-info');
             const audienceInfoEl = document.getElementById('profile-audience-info');
             if (userProfile) {
-                // FIXED: Correctly reference 'userProfile' instead of 'user'
                 if (brandInfoEl) brandInfoEl.value = userProfile.brand || '';
                 if (audienceInfoEl) audienceInfoEl.value = userProfile.audience || '';
             }
@@ -346,19 +344,12 @@ function initializeApp() {
             }
         });
         dom.deleteApiKeyBtn.addEventListener('click', () => {
-            if (confirm('Delete API Key?')) {
-                deleteApiKey();
-                updateApiStatus(false);
-                updateApiKeySettingsUI(false);
-            }
+            if (confirm('Delete API Key?')) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); }
         });
         dom.saveScriptBtn.addEventListener('click', () => {
             const title = prompt("Script Title:", "Untitled Script");
             if (title) {
-                saveScript({
-                    id: Date.now(), title,
-                    hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value,
-                });
+                saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value });
                 alert(`Script '${title}' saved!`);
             }
         });
@@ -367,13 +358,10 @@ function initializeApp() {
         dom.closeHookModalBtn.addEventListener('click', () => closeModal(dom.hookBankModal));
         dom.ctaBankBtn.addEventListener('click', () => openModal(dom.ctaBankModal));
         dom.closeCtaModalBtn.addEventListener('click', () => closeModal(dom.ctaBankModal));
-        dom.myScriptsBtn.addEventListener('click', () => {
-            renderScriptVault(); openModal(dom.scriptVaultModal);
-        });
+        dom.myScriptsBtn.addEventListener('click', () => { renderScriptVault(); openModal(dom.scriptVaultModal); });
         dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) { closeModal(event.target); }
-        });
+        dom.closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); });
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
     }
 
     function bindVaultActions() {
@@ -391,10 +379,7 @@ function initializeApp() {
                     closeModal(dom.scriptVaultModal);
                 }
             } else if (button.classList.contains('delete-btn')) {
-                if (confirm('Delete this script?')) {
-                    deleteScript(scriptId);
-                    renderScriptVault();
-                }
+                if (confirm('Delete this script?')) { deleteScript(scriptId); renderScriptVault(); }
             }
         });
     }
@@ -407,6 +392,7 @@ function initializeApp() {
         bindEventListeners();
         bindVaultActions();
         startNewScriptWorkflow();
+        showWelcomeGuideIfNeeded();
     }
 
     initialize();

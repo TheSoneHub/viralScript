@@ -502,3 +502,36 @@ textarea:focus {
     font-family: var(--font-primary);
     font-size: 0.95rem;
 }
+
+/* === Styles for Phase 1: Welcome Guide === */
+.welcome-step {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+    position: relative;
+    border-left: 2px solid var(--border-color);
+}
+.welcome-step h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+.welcome-step p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+.welcome-step::before {
+    content: '✓';
+    position: absolute;
+    left: -11px;
+    top: 0px;
+    width: 22px;
+    height: 22px;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}

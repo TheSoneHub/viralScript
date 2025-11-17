@@ -8,6 +8,10 @@ const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/ge
  * @param {AbortSignal} signal - An AbortSignal to allow cancelling the request.
  * @returns {Promise<object>} The JSON response from the API.
  */
+// /assets/js/ai.js
+
+// ... (API_ENDPOINT remains the same) ...
+
 async function fetchFromApi(requestBody, signal) {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -18,21 +22,28 @@ async function fetchFromApi(requestBody, signal) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-        signal: signal, // Pass the signal to the fetch request
+        signal: signal,
     });
 
     if (!response.ok) {
+        // Specifically check for invalid API key error from Google
+        if (response.status === 400) {
+            const errorData = await response.json();
+            if (errorData.error?.message.includes('API key not valid')) {
+                throw new Error("API_KEY_INVALID");
+            }
+        }
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     if (!data.candidates || data.candidates.length === 0) {
-        // This can happen due to safety settings or an empty response
-        throw new Error("AI response was blocked or empty.");
+        throw new Error("AI response was blocked or empty. This might be due to safety settings.");
     }
     
     return data;
 }
+// ... (the rest of ai.js remains the same) ...
 
 /**
  * Creates the core system instruction that defines the AI's identity.

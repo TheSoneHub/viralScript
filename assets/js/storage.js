@@ -160,3 +160,28 @@ function getUserProfile() {
         return null;
     }
 }
+
+// === 5. ONBOARDING STORAGE ===
+
+/**
+ * Checks if the user has seen the welcome guide before.
+ * @returns {boolean} True if the guide has been seen.
+ */
+function hasSeenWelcomeGuide() {
+    try {
+        return localStorage.getItem("viralscript_welcome_seen") === "true";
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Marks that the user has now seen the welcome guide.
+ */
+function setWelcomeGuideSeen() {
+    try {
+        localStorage.setItem("viralscript_welcome_seen", "true");
+    } catch (e) {
+        console.error("Failed to save welcome guide status:", e);
+    }
+}
