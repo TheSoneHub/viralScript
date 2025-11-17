@@ -1,7 +1,7 @@
-// /assets/js/main.js - Definitive, Final Version with all features reintegrated
+// /assets/js/main.js - Definitive, Complete Mobile-First Version
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ACCESS GATE LOGIC ---
+    // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
     const accessGate = document.getElementById('access-gate');
     const mobileAppWrapper = document.querySelector('.mobile-app-wrapper');
     const mobileNav = document.querySelector('.mobile-nav');
@@ -75,33 +75,51 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =================================================================
-// MAIN APP LOGIC - MOBILE-FIRST & FULLY-FEATURED
+// MAIN APP LOGIC - MOBILE-FIRST
 // =================================================================
 function initializeApp() {
-    let state = { currentView: 'chat', isAwaitingResponse: false, chatHistory: [] };
+    let state = {
+        currentView: 'chat',
+        isAwaitingResponse: false,
+        chatHistory: [],
+    };
+
     const dom = {
+        // Views & Nav
         editorView: document.getElementById('editor-view'),
         chatView: document.getElementById('chat-view'),
         navEditorBtn: document.getElementById('nav-editor-btn'),
         navChatBtn: document.getElementById('nav-chat-btn'),
+        // Editor
         hookInput: document.getElementById('hook-input'),
         bodyInput: document.getElementById('body-input'),
         ctaInput: document.getElementById('cta-input'),
         newScriptBtn: document.getElementById('new-script-btn'),
         saveScriptBtn: document.getElementById('save-script-btn'),
         copyScriptBtn: document.getElementById('copy-script-btn'),
+        // Chat
         chatHistoryEl: document.getElementById('ai-chat-history'),
         chatInput: document.getElementById('chat-input'),
         sendChatBtn: document.getElementById('send-chat-btn'),
+        // Shared Header Controls
         settingsBtn: document.getElementById('settings-btn'),
         myScriptsBtn: document.getElementById('my-scripts-btn'),
         apiStatusLight: document.getElementById('api-status'),
+        // Modals
         settingsModal: document.getElementById('settings-modal'),
         scriptVaultModal: document.getElementById('script-vault-modal'),
         hookBankModal: document.getElementById('hook-bank-modal'),
         ctaBankModal: document.getElementById('cta-bank-modal'),
         welcomeModal: document.getElementById('welcome-modal'),
+        // Modal Content
         scriptVaultList: document.getElementById('script-vault-list'),
+        // Modal Controls
+        closeModalBtn: document.getElementById('close-modal-btn'),
+        closeVaultModalBtn: document.getElementById('close-vault-modal-btn'),
+        closeHookModalBtn: document.getElementById('close-hook-modal-btn'),
+        closeCtaModalBtn: document.getElementById('close-cta-modal-btn'),
+        closeWelcomeBtn: document.getElementById('close-welcome-btn'),
+        // Settings specific
         apiKeyInput: document.getElementById('api-key-input'),
         saveApiKeyBtn: document.getElementById('save-api-key-btn'),
         deleteApiKeyBtn: document.getElementById('delete-api-key-btn'),
@@ -112,7 +130,8 @@ function initializeApp() {
     function showView(viewName) {
         if (state.currentView === viewName && window.innerWidth < 1024) return;
         state.currentView = viewName;
-        if (window.innerWidth < 1024) {
+
+        if (window.innerWidth < 1024) { // Only perform swaps on mobile
             if (viewName === 'editor') {
                 dom.editorView.classList.remove('hidden');
                 dom.chatView.classList.add('hidden');
@@ -125,8 +144,16 @@ function initializeApp() {
     }
 
     function updateNav() {
-        dom.navEditorBtn.classList.toggle('active', state.currentView === 'editor');
-        dom.navChatBtn.classList.toggle('active', state.currentView === 'chat');
+        if (dom.navEditorBtn && dom.navChatBtn) {
+            dom.navEditorBtn.classList.toggle('active', state.currentView === 'editor');
+            dom.navChatBtn.classList.toggle('active', state.currentView === 'chat');
+        }
+    }
+
+    function showWelcomeGuideIfNeeded() {
+        if (!hasSeenWelcomeGuide() && dom.welcomeModal) {
+            openModal(dom.welcomeModal);
+        }
     }
 
     function startNewScriptWorkflow() {
@@ -139,7 +166,7 @@ function initializeApp() {
         showView('chat');
     }
 
-    async function handleSendMessage() {
+async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
         addMessageToChat({ role: 'user', text: userMessageText });
@@ -194,8 +221,9 @@ function initializeApp() {
 
     function setUiLoading(isLoading) {
         state.isAwaitingResponse = isLoading;
-        if (dom.chatInput) dom.chatInput.disabled = isLoading;
-        if (dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
+        if(dom.chatInput) dom.chatInput.disabled = isLoading;
+        if(dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
+
         const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
         if (isLoading && !skeleton) {
             const skeletonDiv = document.createElement('div');
@@ -208,16 +236,18 @@ function initializeApp() {
     }
 
     function clearEditor() {
-        if (dom.hookInput) dom.hookInput.value = '';
-        if (dom.bodyInput) dom.bodyInput.value = '';
-        if (dom.ctaInput) dom.ctaInput.value = '';
+        dom.hookInput.value = '';
+        dom.bodyInput.value = '';
+        dom.ctaInput.value = '';
     }
     
     function openModal(modalElement) { if (modalElement) modalElement.style.display = 'block'; }
     function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
-    
+
     function updateApiStatus(isKeySet) {
-        if (dom.apiStatusLight) dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
+        if (dom.apiStatusLight) {
+            dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
+        }
     }
 
     function updateApiKeySettingsUI(isKeySet) {
@@ -226,12 +256,15 @@ function initializeApp() {
             dom.apiKeyManageState.classList.toggle('hidden', !isKeySet);
         }
     }
-    
+
     function renderScriptVault() {
         if (!dom.scriptVaultList) return;
         const scripts = getSavedScripts();
         dom.scriptVaultList.innerHTML = '';
-        if (scripts.length === 0) { dom.scriptVaultList.innerHTML = '<p style="text-align: center;">No saved scripts.</p>'; return; }
+        if (scripts.length === 0) {
+            dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>';
+            return;
+        }
         scripts.forEach(script => {
             const item = document.createElement('div');
             item.className = 'vault-item';
@@ -240,48 +273,63 @@ function initializeApp() {
         });
     }
 
-    function showWelcomeGuideIfNeeded() {
-        if (!hasSeenWelcomeGuide() && dom.welcomeModal) {
-            openModal(dom.welcomeModal);
-        }
-    }
-
     function bindEventListeners() {
         // Navigation
-        dom.navEditorBtn.addEventListener('click', () => showView('editor'));
-        dom.navChatBtn.addEventListener('click', () => showView('chat'));
+        if (dom.navEditorBtn) dom.navEditorBtn.addEventListener('click', () => showView('editor'));
+        if (dom.navChatBtn) dom.navChatBtn.addEventListener('click', () => showView('chat'));
 
         // Chat
-        dom.sendChatBtn.addEventListener('click', handleSendMessage);
-        dom.chatInput.addEventListener('keydown', (e) => {
+        if (dom.sendChatBtn) dom.sendChatBtn.addEventListener('click', handleSendMessage);
+        if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
         });
 
         // Editor actions
-        dom.newScriptBtn.addEventListener('click', () => { if (confirm("Start a new script?")) { startNewScriptWorkflow(); } });
-        dom.saveScriptBtn.addEventListener('click', () => {
+        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => {
+            if (confirm("Start a new script?")) { startNewScriptWorkflow(); }
+        });
+        if (dom.saveScriptBtn) dom.saveScriptBtn.addEventListener('click', () => {
              const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
         });
-        dom.copyScriptBtn.addEventListener('click', () => {
+        if (dom.copyScriptBtn) dom.copyScriptBtn.addEventListener('click', () => {
             const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
             navigator.clipboard.writeText(fullScript).then(() => alert("Script copied!"));
         });
 
         // Header controls (shared)
-        dom.settingsBtn.addEventListener('click', () => {
-            const userProfile = getUserProfile();
+        if (dom.settingsBtn) dom.settingsBtn.addEventListener('click', () => {
+             const userProfile = getUserProfile();
             const brandInfoEl = document.getElementById('profile-brand-info');
             const audienceInfoEl = document.getElementById('profile-audience-info');
             if (userProfile) {
-                if(brandInfoEl) brandInfoEl.value = userProfile.brand || '';
-                if(audienceInfoEl) audienceInfoEl.value = userProfile.audience || '';
+                if (brandInfoEl) brandInfoEl.value = userProfile.brand || '';
+                if (audienceInfoEl) audienceInfoEl.value = userProfile.audience || '';
             }
             openModal(dom.settingsModal);
         });
-        dom.myScriptsBtn.addEventListener('click', () => { renderScriptVault(); openModal(dom.scriptVaultModal); });
-        
-        // Modal-specific listeners from within their HTML (e.g., Settings)
+        if (dom.myScriptsBtn) dom.myScriptsBtn.addEventListener('click', () => {
+            renderScriptVault();
+            openModal(dom.scriptVaultModal);
+        });
+
+        // API Key & Profile Saving
+        if (dom.saveApiKeyBtn) dom.saveApiKeyBtn.addEventListener('click', () => {
+            const key = dom.apiKeyInput.value.trim();
+            if (key) {
+                saveApiKey(key);
+                updateApiStatus(true);
+                updateApiKeySettingsUI(true);
+                closeModal(dom.settingsModal);
+            }
+        });
+        if (dom.deleteApiKeyBtn) dom.deleteApiKeyBtn.addEventListener('click', () => {
+            if (confirm("Delete API Key?")) {
+                deleteApiKey();
+                updateApiStatus(false);
+                updateApiKeySettingsUI(false);
+            }
+        });
         const saveProfileBtn = document.getElementById('save-profile-btn');
         if (saveProfileBtn) {
             saveProfileBtn.addEventListener('click', () => {
@@ -292,45 +340,56 @@ function initializeApp() {
                 closeModal(dom.settingsModal);
             });
         }
-        if (dom.saveApiKeyBtn) {
-            dom.saveApiKeyBtn.addEventListener('click', () => {
-                const key = dom.apiKeyInput.value.trim();
-                if (key) { saveApiKey(key); updateApiStatus(true); updateApiKeySettingsUI(true); alert('API Key saved!'); closeModal(dom.settingsModal); }
-            });
-        }
-        if (dom.deleteApiKeyBtn) {
-            dom.deleteApiKeyBtn.addEventListener('click', () => { if (confirm('Delete API Key?')) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); } });
-        }
         
-        // All close buttons inside modals
+        // Modal Closing Logic
         document.querySelectorAll('.close-btn').forEach(btn => {
             btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
         });
-        const closeWelcomeBtn = document.getElementById('close-welcome-btn');
-        if (closeWelcomeBtn) {
-            closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); });
-        }
-
-        // Global click to close modals
+        if (dom.closeWelcomeBtn) dom.closeWelcomeBtn.addEventListener('click', () => {
+            closeModal(dom.welcomeModal);
+            setWelcomeGuideSeen();
+        });
         window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) { closeModal(event.target); }
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target);
+            }
+        });
+    }
+
+    function bindVaultActions() {
+        if (!dom.scriptVaultList) return;
+        dom.scriptVaultList.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            const scriptId = parseInt(button.dataset.id);
+            if (button.classList.contains('load-btn')) {
+                const scriptToLoad = getSavedScripts().find(s => s.id === scriptId);
+                if (scriptToLoad) {
+                    dom.hookInput.value = scriptToLoad.hook;
+                    dom.bodyInput.value = scriptToLoad.body;
+                    dom.ctaInput.value = scriptToLoad.cta;
+                    showView('editor');
+                    closeModal(dom.scriptVaultModal);
+                }
+            } else if (button.classList.contains('delete-btn')) {
+                if (confirm('Delete this script?')) {
+                    deleteScript(scriptId);
+                    renderScriptVault();
+                }
+            }
         });
     }
 
     function initialize() {
+        bindEventListeners();
+        bindVaultActions();
+        
+        // Load data and set initial states
         const existingKey = getApiKey();
         updateApiStatus(!!existingKey);
         updateApiKeySettingsUI(!!existingKey);
         
-        // This function is in hookbank.js, ensure it's loaded
-        if (typeof initializeHookBank === 'function') {
-            initializeHookBank();
-        }
-
-        bindEventListeners();
-        // You would also bind vault actions here if needed
-        // bindVaultActions(); 
-        
+        // Start the user workflow
         startNewScriptWorkflow();
         updateNav();
         showWelcomeGuideIfNeeded();
