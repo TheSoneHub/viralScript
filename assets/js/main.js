@@ -1,17 +1,23 @@
-// /assets/js/main.js
+// /assets/js/main.js - Definitive version with all fixes
 
 document.addEventListener('DOMContentLoaded', () => {
-    // These elements exist on the page right away.
+    // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
     const accessGate = document.getElementById('access-gate');
     const appContainer = document.querySelector('.app-container');
-    const emailInput = document.getElementById('access-email-input'); // CORRECTED ID
+    const emailInput = document.getElementById('access-email-input');
     const enterAppBtn = document.getElementById('enter-app-btn');
-    const errorMessage = document.getElementById('gate-error-message'); // CORRECTED ID
+    const errorMessage = document.getElementById('gate-error-message');
 
-    // --- 1. ACCESS GATE & AUTHENTICATION ---
-
+    /**
+     * Validates an email against the Google Sheet backend.
+     * @param {string} email The email to validate.
+     * @returns {Promise<boolean>} True if the email is approved.
+     */
     async function validateEmail(email) {
-        if (!email || !EMAIL_VALIDATION_API_URL) return false;
+        if (!email || !EMAIL_VALIDATION_API_URL) {
+            console.error("Email or API URL is missing.");
+            return false;
+        }
         const url = `${EMAIL_VALIDATION_API_URL}?email=${encodeURIComponent(email.trim().toLowerCase())}`;
         try {
             const response = await fetch(url);
@@ -19,13 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             return data.status === 'success';
         } catch (error) {
-            console.error('Email validation failed:', error);
-            errorMessage.textContent = 'Could not verify email. Check connection.';
-            errorMessage.classList.remove('hidden');
+            console.error('Email validation fetch failed:', error);
+            if (errorMessage) {
+                errorMessage.textContent = 'Could not verify email. Check connection.';
+                errorMessage.classList.remove('hidden');
+            }
             return false;
         }
     }
 
+    /**
+     * Hides the access gate and starts the main application.
+     */
     function grantAccessAndInitialize() {
         accessGate.style.transition = 'opacity 0.5s ease';
         accessGate.style.opacity = '0';
@@ -36,39 +47,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
+    /**
+     * Handles the user clicking the login button.
+     */
     async function handleEmailLogin() {
+        if (!emailInput || !enterAppBtn) return;
         const email = emailInput.value;
-        if (!email) return;
+        if (!email || enterAppBtn.disabled) return;
 
         enterAppBtn.disabled = true;
         enterAppBtn.textContent = 'Verifying...';
-        errorMessage.classList.add('hidden');
+        if(errorMessage) errorMessage.classList.add('hidden');
 
         const isApproved = await validateEmail(email);
 
         if (isApproved) {
+            console.log("Email approved. Storing session:", email);
             localStorage.setItem('approvedUserEmail', email);
             grantAccessAndInitialize();
         } else {
+            console.log("Email denied.");
             emailInput.classList.add('shake');
-            errorMessage.textContent = 'Access Denied. Please check the email.';
-            errorMessage.classList.remove('hidden');
+            if (errorMessage) {
+                errorMessage.textContent = 'Access Denied. Please check the email.';
+                errorMessage.classList.remove('hidden');
+            }
             setTimeout(() => emailInput.classList.remove('shake'), 820);
+            enterAppBtn.disabled = false;
+            enterAppBtn.textContent = 'Continue';
         }
-
-        enterAppBtn.disabled = false;
-        enterAppBtn.textContent = 'Continue';
     }
 
+    /**
+     * Checks for a saved session on page load. This is the main entry point.
+     */
     async function checkStoredSession() {
         const storedEmail = localStorage.getItem('approvedUserEmail');
+        console.log("Checking for stored email:", storedEmail);
+
         if (storedEmail) {
+            if(enterAppBtn) {
+                enterAppBtn.textContent = 'Checking session...';
+                enterAppBtn.disabled = true;
+            }
+            
             const isStillApproved = await validateEmail(storedEmail);
             if (isStillApproved) {
+                console.log("Stored session is valid. Granting access.");
                 grantAccessAndInitialize();
             } else {
+                console.log("Stored session is no longer valid. Removing.");
                 localStorage.removeItem('approvedUserEmail');
+                if(enterAppBtn) {
+                    enterAppBtn.textContent = 'Continue';
+                    enterAppBtn.disabled = false;
+                }
             }
+        } else {
+            console.log("No stored session found. Awaiting login.");
         }
     }
 
@@ -92,15 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // The Main Application Logic - Initialized ONLY after access is granted
 // =================================================================
 function initializeApp() {
-    // --- 2. APPLICATION STATE ---
     let state = {
-        appMode: 'DISCOVERY', // DISCOVERY, GENERATING, EDITING, ANALYZING, FINAL_CHECK
+        appMode: 'DISCOVERY',
         chatHistory: [],
         isAwaitingResponse: false,
-        stopGenerationController: null,
     };
 
-    // --- 3. DOM ELEMENT CONNECTIONS ---
     const dom = {
         hookInput: document.getElementById('hook-input'),
         bodyInput: document.getElementById('body-input'),
@@ -133,26 +166,16 @@ function initializeApp() {
         closeCtaModalBtn: document.getElementById('close-cta-modal-btn'),
     };
 
-    // --- 4. CORE WORKFLOW FUNCTIONS ---
-
     function startNewScriptWorkflow() {
         state.appMode = 'DISCOVERY';
         state.chatHistory = [];
         dom.chatHistoryEl.innerHTML = '';
         clearEditor();
-
         const firstQuestion = "ကြိုဆိုပါတယ်။ ဒီနေ့ ဘယ်လို short video content မျိုး ဖန်တီးချင်ပါသလဲ? Topic ဒါမှမဟုတ် ခေါင်းထဲရှိနေတဲ့ idea လေးကို ပြောပြပေးပါ။";
         addMessageToChat({ role: 'model', text: firstQuestion });
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
     }
 
-// /assets/js/main.js
-
-// ... (all other functions remain the same) ...
-
-    /**
-     * Handles sending a message, now with Editor-to-AI sync.
-     */
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
@@ -161,31 +184,22 @@ function initializeApp() {
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
         setUiLoading(true);
-
-        state.stopGenerationController = new AbortController();
         
         try {
             let aiResponseText;
             const urlRegex = /^(https?:\/\/)/i;
             const analysisTriggers = ["script သုံးသပ်ပေး", "full analysis", "အားလုံးကိုစစ်ပေး", "review script", "analyze script"];
             
-            // --- NEW: Check if the user wants analysis based on the current editor content ---
             if (analysisTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
-                // This will now use the latest text from the editor panels
                 aiResponseText = await handleFullScriptAnalysis(); 
-            
             } else if (urlRegex.test(userMessageText)) {
-                aiResponseText = await deconstructViralVideo(userMessageText, state.stopGenerationController.signal);
-            
+                aiResponseText = await deconstructViralVideo(userMessageText);
             } else if (userMessageText.toLowerCase().includes('final check')) {
-                // Final check should also use the latest editor content
                 aiResponseText = await handleFinalCheck();
-            
             } else {
-                // Handle other modes as usual
                 switch (state.appMode) {
                     case 'DISCOVERY':
-                        const discoveryResponse = await generateChatResponse(state.chatHistory, state.stopGenerationController.signal);
+                        const discoveryResponse = await generateChatResponse(state.chatHistory);
                         if (discoveryResponse && discoveryResponse.includes("[PROCEED_TO_GENERATION]")) {
                             await generateFinalScript();
                             aiResponseText = null; 
@@ -197,7 +211,7 @@ function initializeApp() {
                         aiResponseText = await handleEditRequest(userMessageText);
                         break;
                     default:
-                        aiResponseText = await generateChatResponse(state.chatHistory, state.stopGenerationController.signal);
+                        aiResponseText = await generateChatResponse(state.chatHistory);
                         break;
                 }
             }
@@ -207,81 +221,30 @@ function initializeApp() {
                 state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
             }
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error("Error during AI response:", error);
-                addMessageToChat({ role: 'model', text: 'An error occurred. Please try again.' });
-            }
+            console.error("Error during AI response:", error);
+            addMessageToChat({ role: 'model', text: 'An error occurred. Please try again.' });
         } finally {
             setUiLoading(false);
         }
     }
-    
-    // --- Also, update handleFullScriptAnalysis and handleFinalCheck to read from the editor ---
-    
-    async function handleFinalCheck() {
-        state.appMode = 'FINAL_CHECK';
-        addMessageToChat({ role: 'model', text: "Script ကို နောက်ဆုံးအဆင့် စစ်ဆေးနေပါသည်..." });
-        
-        // **UPDATED:** Always read the latest script from the editor textareas
-        const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-        
-        const finalCheckText = await performFinalCheck(fullScript, state.stopGenerationController.signal);
-        addMessageToChat({ role: 'model', text: "Script အသစ်တစ်ခု ထပ်မံဖန်တီးလိုပါက 'New Script' ခလုတ်ကို နှိပ်နိုင်ပါသည်။" });
-        return finalCheckText;
-    }
 
-    async function handleFullScriptAnalysis() {
-        state.appMode = 'ANALYZING';
-        addMessageToChat({ role: 'model', text: "ကောင်းပါပြီ။ Script တစ်ခုလုံးရဲ့ Cohesion ကို သုံးသပ်ပါမယ်။" });
-        
-        // **UPDATED:** Always read the latest script from the editor textareas
-        const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-        
-        const analysisReport = await performFullAnalysis(fullScript, state.stopGenerationController.signal);
-        state.appMode = 'EDITING'; // Return to editing after analysis
-        return analysisReport;
-    }
-    
-// ... (all other functions remain the same) ...
-
-// /assets/js/main.js
-
-// ... (all other functions in main.js remain the same) ...
-
-    /**
-     * Generates the script, parses the new scene-based JSON, and populates the editor.
-     */
     async function generateFinalScript() {
         state.appMode = 'GENERATING';
         addMessageToChat({ role: 'model', text: 'အချက်အလက်များ ပြည့်စုံပါပြီ။ Script ကို ခဏအကြာ ဖန်တီးပေးနေပါသည်...' });
         setInputsReadOnly(true);
 
-        const scriptJSON = await generateScriptFromHistory(state.chatHistory, state.stopGenerationController.signal);
+        const scriptJSON = await generateScriptFromHistory(state.chatHistory);
         
-        // --- NEW LOGIC TO PARSE SCENE-BASED JSON ---
         if (scriptJSON && scriptJSON.scenes && scriptJSON.scenes.length > 0) {
             const scenes = scriptJSON.scenes;
-            
-            // 1. Get the Hook from the first scene
             const hook = scenes[0].script_burmese || '';
-
-            // 2. Get the CTA from the last scene
             const cta = scenes.length > 1 ? scenes[scenes.length - 1].script_burmese : '';
-
-            // 3. Construct the Body from all scenes in between
             const bodyScenes = scenes.slice(1, scenes.length - 1);
             const body = bodyScenes.map(scene => scene.script_burmese).join('\n\n').trim();
 
-            // If there's only one scene, use it for the hook and leave others blank
-            if (scenes.length === 1) {
-                dom.hookInput.value = hook;
-                dom.bodyInput.value = '';
-                dom.ctaInput.value = '';
-            } else {
-                dom.hookInput.value = hook;
-                dom.bodyInput.value = body;
-                dom.ctaInput.value = cta;
-            }
+            dom.hookInput.value = (scenes.length === 1) ? hook : hook;
+            dom.bodyInput.value = (scenes.length === 1) ? '' : body;
+            dom.ctaInput.value = (scenes.length === 1) ? '' : cta;
             
             const nextStepMessage = "Script အကြမ်းကို ဖန်တီးပြီးပါပြီ။ ဘယ်အပိုင်းကိုမဆို (Hook, Body, CTA) ရွေးပြီး ပြင်ခိုင်းနိုင်ပါတယ်။ 'final check' လို့ရိုက်ပြီး နောက်ဆုံးအဆင့်စစ်ဆေးမှု ပြုလုပ်နိုင်ပါတယ်။";
             addMessageToChat({ role: 'model', text: nextStepMessage });
@@ -290,12 +253,10 @@ function initializeApp() {
         } else {
             const errorMessage = 'Script ဖန်တီးရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။ ကျေးဇူးပြု၍ စကားဆက်ပြောပါ သို့မဟုတ် ပြန်လည်ကြိုးစားပါ။';
             addMessageToChat({ role: 'model', text: errorMessage });
-            state.appMode = 'DISCOVERY'; // Revert to discovery on failure
+            state.appMode = 'DISCOVERY';
         }
         setInputsReadOnly(false);
     }
-    
-// ... (all other functions in main.js remain the same) ...
     
     async function handleEditRequest(instruction) {
         let partToEdit = null, currentText = '';
@@ -305,18 +266,18 @@ function initializeApp() {
 
         if (partToEdit) {
             addMessageToChat({ role: 'model', text: `${partToEdit} ကို ပြင်ဆင်နေပါသည်...` });
-            const revisedText = await reviseScriptPart(partToEdit, currentText, instruction, state.stopGenerationController.signal);
+            const revisedText = await reviseScriptPart(partToEdit, currentText, instruction);
             document.getElementById(`${partToEdit}-input`).value = revisedText;
             return `${partToEdit} ကို ပြင်ဆင်ပြီးပါပြီ။ နောက်ထပ် ဘာများ ပြင်ဆင်လိုပါသေးလဲ?`;
         }
-        return await generateChatResponse(state.chatHistory, state.stopGenerationController.signal);
+        return await generateChatResponse(state.chatHistory);
     }
 
     async function handleFinalCheck() {
         state.appMode = 'FINAL_CHECK';
         addMessageToChat({ role: 'model', text: "Script ကို နောက်ဆုံးအဆင့် စစ်ဆေးနေပါသည်..." });
         const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-        const finalCheckText = await performFinalCheck(fullScript, state.stopGenerationController.signal);
+        const finalCheckText = await performFinalCheck(fullScript);
         addMessageToChat({ role: 'model', text: "Script အသစ်တစ်ခု ထပ်မံဖန်တီးလိုပါက 'New Script' ခလုတ်ကို နှိပ်နိုင်ပါသည်။" });
         return finalCheckText;
     }
@@ -325,12 +286,10 @@ function initializeApp() {
         state.appMode = 'ANALYZING';
         addMessageToChat({ role: 'model', text: "ကောင်းပါပြီ။ Script တစ်ခုလုံးရဲ့ Cohesion ကို သုံးသပ်ပါမယ်။" });
         const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-        const analysisReport = await performFullAnalysis(fullScript, state.stopGenerationController.signal);
+        const analysisReport = await performFullAnalysis(fullScript);
         state.appMode = 'EDITING';
         return analysisReport;
     }
-
-    // --- 5. UI HELPER FUNCTIONS ---
 
     function addMessageToChat({ role, text }) {
         const messageDiv = document.createElement('div');
@@ -344,7 +303,6 @@ function initializeApp() {
         state.isAwaitingResponse = isLoading;
         dom.chatInput.disabled = isLoading;
         dom.sendChatBtn.disabled = isLoading;
-
         const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
         if (isLoading) {
             dom.chatInput.placeholder = "AI စဉ်းစားနေပါသည်...";
@@ -353,12 +311,10 @@ function initializeApp() {
                 skeletonDiv.className = 'chat-message skeleton-message';
                 skeletonDiv.innerHTML = `<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div>`;
                 dom.chatHistoryEl.appendChild(skeletonDiv);
-                dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
             }
         } else {
             if (skeleton) skeleton.remove();
             dom.chatInput.placeholder = "AI နှင့် စကားပြောပါ...";
-            state.stopGenerationController = null;
         }
     }
 
@@ -374,17 +330,12 @@ function initializeApp() {
         dom.ctaInput.readOnly = isReadOnly;
     }
 
-    function openModal(modalElement) {
-        modalElement.style.display = 'block';
-    }
-
-    function closeModal(modalElement) {
-        modalElement.style.display = 'none';
-    }
+    function openModal(modalElement) { modalElement.style.display = 'block'; }
+    function closeModal(modalElement) { modalElement.style.display = 'none'; }
     
     function updateApiStatus(isKeySet) {
         dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
-        dom.apiStatusLight.title = isKeySet ? 'API Key ထည့်သွင်းပြီး' : 'API Key မထည့်ရသေးပါ';
+        dom.apiStatusLight.title = isKeySet ? 'API Key set' : 'API Key needed';
     }
 
     function updateApiKeySettingsUI(isKeySet) {
@@ -392,95 +343,11 @@ function initializeApp() {
         dom.apiKeyManageState.classList.toggle('hidden', !isKeySet);
     }
 
-    // --- 6. EVENT LISTENERS BINDING ---
-    
-    function bindEventListeners() {
-        dom.sendChatBtn.addEventListener('click', handleSendMessage);
-        dom.chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) {
-                e.preventDefault();
-                handleSendMessage();
-            }
-        });
-
-        dom.clearChatBtn.addEventListener('click', () => {
-            if (confirm('Chat history တစ်ခုလုံးကို ဖျက်ပြီး အစကပြန်စမှာလား?')) {
-                deleteChatHistory();
-                startNewScriptWorkflow();
-            }
-        });
-
-        dom.newScriptBtn.addEventListener('click', () => {
-            if (confirm('လက်ရှိ script ကိုမသိမ်းရသေးပါက ပျောက်သွားပါမည်။ Script အသစ် စတင်မှာလား?')) {
-                startNewScriptWorkflow();
-            }
-        });
-        
-        dom.saveApiKeyBtn.addEventListener('click', () => {
-            const key = dom.apiKeyInput.value.trim();
-            if (key) {
-                saveApiKey(key);
-                updateApiStatus(true);
-                updateApiKeySettingsUI(true);
-                alert('API Key ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ!');
-                closeModal(dom.settingsModal);
-            } else {
-                alert('ကျေးဇူးပြု၍ API Key အမှန်ကို ထည့်သွင်းပါ။');
-            }
-        });
-        
-        dom.deleteApiKeyBtn.addEventListener('click', () => {
-            if (confirm('API Key ကို တကယ်ဖျက်မှာလား?')) {
-                deleteApiKey();
-                updateApiStatus(false);
-                updateApiKeySettingsUI(false);
-                alert('API Key ကို ဖယ်ရှားပြီးပါပြီ။');
-            }
-        });
-
-        dom.saveScriptBtn.addEventListener('click', () => {
-            const hook = dom.hookInput.value.trim();
-            const body = dom.bodyInput.value.trim();
-            const cta = dom.ctaInput.value.trim();
-
-            if (!hook && !body && !cta) {
-                alert("Script is empty. Nothing to save.");
-                return;
-            }
-            const title = prompt("Script အတွက် ခေါင်းစဉ်တစ်ခုပေးပါ။", "Untitled Script");
-            if (title) {
-                saveScript({ id: Date.now(), title, hook, body, cta });
-                alert(`'${title}' ကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။`);
-            }
-        });
-        
-        dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
-        dom.closeModalBtn.addEventListener('click', () => closeModal(dom.settingsModal));
-        dom.hookBankBtn.addEventListener('click', () => openModal(dom.hookBankModal));
-        dom.closeHookModalBtn.addEventListener('click', () => closeModal(dom.hookBankModal));
-        dom.ctaBankBtn.addEventListener('click', () => openModal(dom.ctaBankModal));
-        dom.closeCtaModalBtn.addEventListener('click', () => closeModal(dom.ctaBankModal));
-        dom.myScriptsBtn.addEventListener('click', () => {
-            renderScriptVault();
-            openModal(dom.scriptVaultModal);
-        });
-        dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
-
-        window.addEventListener('click', (event) => {
-            if (event.target == dom.settingsModal) closeModal(dom.settingsModal);
-            if (event.target == dom.hookBankModal) closeModal(dom.hookBankModal);
-            if (event.target == dom.ctaBankModal) closeModal(dom.ctaBankModal);
-            if (event.target == dom.scriptVaultModal) closeModal(dom.scriptVaultModal);
-        });
-    }
-    
-    // --- 7. SCRIPT VAULT & INSPIRATION BANK LOGIC ---
-    
     function renderScriptVault() {
         const scripts = getSavedScripts();
         dom.scriptVaultList.innerHTML = '';
         if (scripts.length === 0) {
-            dom.scriptVaultList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">သင်သိမ်းဆည်းထားသော script များ မရှိသေးပါ။</p>';
+            dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>';
             return;
         }
         scripts.forEach(script => {
@@ -496,11 +363,81 @@ function initializeApp() {
         });
     }
 
+    function bindEventListeners() {
+        dom.sendChatBtn.addEventListener('click', handleSendMessage);
+        dom.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+        dom.clearChatBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the chat and start a new script?')) {
+                deleteChatHistory();
+                startNewScriptWorkflow();
+            }
+        });
+        dom.newScriptBtn.addEventListener('click', () => {
+            if (confirm('Start a new script? Any unsaved changes will be lost.')) {
+                startNewScriptWorkflow();
+            }
+        });
+        dom.saveApiKeyBtn.addEventListener('click', () => {
+            const key = dom.apiKeyInput.value.trim();
+            if (key) {
+                saveApiKey(key);
+                updateApiStatus(true);
+                updateApiKeySettingsUI(true);
+                alert('API Key saved successfully!');
+                closeModal(dom.settingsModal);
+            } else {
+                alert('Please enter a valid API Key.');
+            }
+        });
+        dom.deleteApiKeyBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete your API Key?')) {
+                deleteApiKey();
+                updateApiStatus(false);
+                updateApiKeySettingsUI(false);
+                alert('API Key deleted.');
+            }
+        });
+        dom.saveScriptBtn.addEventListener('click', () => {
+            const hook = dom.hookInput.value.trim();
+            const body = dom.bodyInput.value.trim();
+            const cta = dom.ctaInput.value.trim();
+            if (!hook && !body && !cta) {
+                alert("Script is empty. Nothing to save.");
+                return;
+            }
+            const title = prompt("Enter a title for this script:", "Untitled Script");
+            if (title) {
+                saveScript({ id: Date.now(), title, hook, body, cta });
+                alert(`Script '${title}' saved successfully!`);
+            }
+        });
+        dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
+        dom.closeModalBtn.addEventListener('click', () => closeModal(dom.settingsModal));
+        dom.hookBankBtn.addEventListener('click', () => openModal(dom.hookBankModal));
+        dom.closeHookModalBtn.addEventListener('click', () => closeModal(dom.hookBankModal));
+        dom.ctaBankBtn.addEventListener('click', () => openModal(dom.ctaBankModal));
+        dom.closeCtaModalBtn.addEventListener('click', () => closeModal(dom.ctaBankModal));
+        dom.myScriptsBtn.addEventListener('click', () => {
+            renderScriptVault();
+            openModal(dom.scriptVaultModal);
+        });
+        dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target);
+            }
+        });
+    }
+
     function bindVaultActions() {
         dom.scriptVaultList.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const scriptId = parseInt(button.dataset.id);
             if (button.classList.contains('load-btn')) {
                 const scriptToLoad = getSavedScripts().find(s => s.id === scriptId);
@@ -508,14 +445,14 @@ function initializeApp() {
                     dom.hookInput.value = scriptToLoad.hook;
                     dom.bodyInput.value = scriptToLoad.body;
                     dom.ctaInput.value = scriptToLoad.cta;
-                    const loadMessage = `Script "${scriptToLoad.title}" ကို ပြန်လည်ဖွင့်ပြီးပါပြီ။`;
+                    const loadMessage = `Script "${scriptToLoad.title}" has been loaded.`;
                     addMessageToChat({role: 'model', text: loadMessage});
                     state.chatHistory.push({ role: 'model', parts: [{ text: loadMessage }] });
                     state.appMode = 'EDITING';
                     closeModal(dom.scriptVaultModal);
                 }
             } else if (button.classList.contains('delete-btn')) {
-                if (confirm(`'${button.parentElement.previousElementSibling.textContent}' ကို တကယ်ဖျက်မှာလား?`)) {
+                if (confirm(`Are you sure you want to delete this script?`)) {
                     deleteScript(scriptId);
                     renderScriptVault();
                 }
@@ -523,18 +460,13 @@ function initializeApp() {
         });
     }
     
-    // --- 8. INITIALIZATION ---
-
     function initialize() {
         const existingKey = getApiKey();
         updateApiStatus(!!existingKey);
         updateApiKeySettingsUI(!!existingKey);
-        
         initializeHookBank();
-        
         bindEventListeners();
         bindVaultActions();
-        
         startNewScriptWorkflow();
     }
 
