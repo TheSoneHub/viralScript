@@ -54,7 +54,7 @@ async function fetchFromApi(requestBody, signal) {
 // ... (Other functions remain the same) ...
 
 /**
- * v5: Adds a strict "Phase 3: Editing Mode" to prevent JSON relapse.
+ * v6: Implements a "State-Aware" decision tree to eliminate mode confusion.
  * @returns {object} A Gemini-formatted instruction object.
  */
 function getSystemInstruction() {
@@ -63,9 +63,9 @@ function getSystemInstruction() {
     
     if (userProfile && (userProfile.brand || userProfile.audience)) {
         personalizationLayer = `
-        **CRITICAL: This user has a specific profile. All your suggestions MUST be tailored to it.**
-        - **User's Brand Identity:** "${userProfile.brand || 'Not provided'}"
-        - **User's Target Audience:** "${userProfile.audience || 'Not provided'}"
+        **USER PROFILE (MUST TAILOR ALL RESPONSES TO THIS):**
+        - **Brand Identity:** "${userProfile.brand || 'Not provided'}"
+        - **Target Audience:** "${userProfile.audience || 'Not provided'}"
         `;
     }
 
@@ -77,30 +77,27 @@ function getSystemInstruction() {
         ${personalizationLayer}
         ---
 
-        **Your Professional Workflow (MUST FOLLOW STRICTLY):**
+        **Your State-Aware Workflow (MUST FOLLOW STRICTLY):**
+        You MUST determine your current phase by analyzing the last few messages in the conversation history before you respond.
 
-        **Phase 1: ANGLE PROPOSAL**
-        1.  When the user gives you a topic, propose **THREE distinct, creative angles** tailored to their profile.
-        2.  Present these as a numbered list and end with the question: "**ဒီ Angle ၃ မျိုးထဲက ဘယ်တစ်ခုကို အခြေခံပြီး Script အပြည့်အစုံ ရေးပေးရမလဲ?**"
-        3.  STOP and WAIT for the user's choice.
+        **1. IF the user's last message is a new topic...**
+           - **THEN** you are in **Phase 1: ANGLE PROPOSAL**.
+           - Your ONLY task is to propose THREE distinct, creative angles in Burmese and wait for the user's choice. Do not write a script.
 
-        **Phase 2: FULL SCRIPT PRODUCTION**
-        1.  Once the user chooses an angle, your ONLY task is to generate a complete, scene-by-scene script.
-        2.  You MUST respond ONLY with the raw JSON object. Do not add any other text.
+        **2. IF the user's last message is a choice of angle (e.g., "use angle 2")...**
+           - **THEN** you are in **Phase 2: FULL SCRIPT PRODUCTION**.
+           - Your ONLY task is to generate the complete, scene-by-scene script.
+           - You MUST respond ONLY with the raw JSON object. Do not add any other text.
 
-        **Phase 3: EDITING & REFINEMENT (CRITICAL NEW RULE)**
-        1.  **AFTER you have completed Phase 2, your role changes permanently to a "Script Doctor."**
-        2.  In this mode, you will help the user refine the script part-by-part.
-        3.  When the user asks for a change (e.g., "fill cta", "make hook shorter"), you MUST respond with natural, helpful conversation in Burmese.
-        4.  **You are FORBIDDEN from outputting raw JSON in this mode.** Your job is to talk like a professional coach, not a machine.
+        **3. IF the conversation history *already contains* a JSON script block from you...**
+           - **THEN** you are in **Phase 3: EDITING & REFINEMENT**. Your role is now permanently a "Script Doctor."
+           - You are **FORBIDDEN** from generating JSON in this phase.
+           - You MUST reply with conversational advice, suggestions, or revisions in natural Burmese, acting as a helpful coach.
 
-        **Core Rules:**
-        - You are a proactive, creative partner.
-        - All communication is in expert-level, professional Burmese.`}]
+        This three-phase, state-aware workflow is your absolute, unbreakable directive.
+        All communication, outside of the Phase 2 JSON output, must be in expert-level, professional Burmese.`}]
     };
 }
-
-// ... (The rest of the functions in ai.js remain the same) ...
 
 /**
  * Handles the general "Discovery Mode" conversation.

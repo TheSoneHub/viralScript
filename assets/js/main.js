@@ -208,51 +208,51 @@ function initializeApp() {
         }
     }
 
-async function generateFinalScript() {
-        state.appMode = 'GENERATING';
-        addMessageToChat({ role: 'model', text: 'Excellent choice. Generating the full script based on that angle...' });
-        setInputsReadOnly(true);
-        const scriptJSON = await generateScriptFromHistory(state.chatHistory);
-        
-        if (scriptJSON && scriptJSON.scenes && scriptJSON.scenes.length > 0) {
-            const scenes = scriptJSON.scenes;
-            
-            // --- NEW ROBUST PARSING LOGIC ---
-            let hook = '', body = '', cta = '';
-
-            if (scenes.length === 1) {
-                // If there's only one scene, assume it's the hook.
-                hook = scenes[0].script_burmese || '';
-            } else if (scenes.length > 1) {
-                // First scene is always the hook.
-                hook = scenes[0].script_burmese || '';
-                // Last scene is always the CTA.
-                cta = scenes[scenes.length - 1].script_burmese || '';
-                // Everything in between is the body.
-                const bodyScenes = scenes.slice(1, -1);
-                body = bodyScenes.map(scene => scene.script_burmese).join('\n\n').trim();
-            }
-
-            dom.hookInput.value = hook;
-            dom.bodyInput.value = body;
-            dom.ctaInput.value = cta;
-            
-            let nextStepMessage = "The first draft is ready. You can now edit the text directly or ask me for revisions (e.g., 'make the hook shorter').";
-            
-            // Proactively ask about the CTA if it was generated empty
-            if (!cta.trim()) {
-                nextStepMessage += "\n\nI noticed the Call to Action is currently empty. What is the main goal you want the audience to take after watching this video?";
-            }
-
-            addMessageToChat({ role: 'model', text: nextStepMessage });
-            state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-            state.appMode = 'EDITING'; // Officially enter Editing Mode
-        } else {
-            addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try asking again.' });
-            state.appMode = 'DISCOVERY';
-        }
-        setInputsReadOnly(false);
+/**
+ * v6: Implements a "State-Aware" decision tree to eliminate mode confusion.
+ * @returns {object} A Gemini-formatted instruction object.
+ */
+function getSystemInstruction() {
+    const userProfile = getUserProfile();
+    let personalizationLayer = "The user has not provided a profile. Assume a general, professional style.";
+    
+    if (userProfile && (userProfile.brand || userProfile.audience)) {
+        personalizationLayer = `
+        **USER PROFILE (MUST TAILOR ALL RESPONSES TO THIS):**
+        - **Brand Identity:** "${userProfile.brand || 'Not provided'}"
+        - **Target Audience:** "${userProfile.audience || 'Not provided'}"
+        `;
     }
+
+    return {
+        role: "user",
+        parts: [{ "text": `You are a "Chief Creative Officer," a world-class AI scriptwriter for Burmese content creators.
+
+        ---
+        ${personalizationLayer}
+        ---
+
+        **Your State-Aware Workflow (MUST FOLLOW STRICTLY):**
+        You MUST determine your current phase by analyzing the last few messages in the conversation history before you respond.
+
+        **1. IF the user's last message is a new topic...**
+           - **THEN** you are in **Phase 1: ANGLE PROPOSAL**.
+           - Your ONLY task is to propose THREE distinct, creative angles in Burmese and wait for the user's choice. Do not write a script.
+
+        **2. IF the user's last message is a choice of angle (e.g., "use angle 2")...**
+           - **THEN** you are in **Phase 2: FULL SCRIPT PRODUCTION**.
+           - Your ONLY task is to generate the complete, scene-by-scene script.
+           - You MUST respond ONLY with the raw JSON object. Do not add any other text.
+
+        **3. IF the conversation history *already contains* a JSON script block from you...**
+           - **THEN** you are in **Phase 3: EDITING & REFINEMENT**. Your role is now permanently a "Script Doctor."
+           - You are **FORBIDDEN** from generating JSON in this phase.
+           - You MUST reply with conversational advice, suggestions, or revisions in natural Burmese, acting as a helpful coach.
+
+        This three-phase, state-aware workflow is your absolute, unbreakable directive.
+        All communication, outside of the Phase 2 JSON output, must be in expert-level, professional Burmese.`}]
+    };
+}
     
     async function handleEditRequest(instruction) {
         let partToEdit = null, currentText = '';
