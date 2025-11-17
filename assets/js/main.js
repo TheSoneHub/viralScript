@@ -1,51 +1,41 @@
 // /assets/js/main.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    // These elements exist on the page right away.
     const accessGate = document.getElementById('access-gate');
     const appContainer = document.querySelector('.app-container');
+    const emailInput = document.getElementById('access-email-input'); // CORRECTED ID
     const enterAppBtn = document.getElementById('enter-app-btn');
-    const errorMessage = document.getElementById('error-message');
-    const emailInput = document.getElementById('access-email-input'); // CORRECT ID
+    const errorMessage = document.getElementById('gate-error-message'); // CORRECTED ID
+
     // --- 1. ACCESS GATE & AUTHENTICATION ---
 
-    /**
-     * Validates an email against the Google Sheet backend.
-     * @param {string} email The email to validate.
-     * @returns {Promise<boolean>} True if the email is approved, false otherwise.
-     */
     async function validateEmail(email) {
         if (!email || !EMAIL_VALIDATION_API_URL) return false;
         const url = `${EMAIL_VALIDATION_API_URL}?email=${encodeURIComponent(email.trim().toLowerCase())}`;
-
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+            if (!response.ok) throw new Error('Network response was not OK');
             const data = await response.json();
             return data.status === 'success';
         } catch (error) {
             console.error('Email validation failed:', error);
-            errorMessage.textContent = 'Could not verify email. Please check your connection.';
+            errorMessage.textContent = 'Could not verify email. Check connection.';
             errorMessage.classList.remove('hidden');
             return false;
         }
     }
 
-    /**
-     * Hides the access gate, shows the app, and starts the main application logic.
-     */
     function grantAccessAndInitialize() {
         accessGate.style.transition = 'opacity 0.5s ease';
         accessGate.style.opacity = '0';
         setTimeout(() => {
             accessGate.classList.add('hidden');
             appContainer.classList.remove('hidden');
-            initializeApp(); // The main app starts ONLY after access is granted
+            initializeApp(); // Run the main app logic ONLY after access is granted
         }, 500);
     }
-    
-    /**
-     * Handles the user clicking the login button.
-     */
+
     async function handleEmailLogin() {
         const email = emailInput.value;
         if (!email) return;
@@ -61,18 +51,15 @@ document.addEventListener('DOMContentLoaded', () => {
             grantAccessAndInitialize();
         } else {
             emailInput.classList.add('shake');
-            errorMessage.textContent = 'Access Denied. Please check the email and try again.';
+            errorMessage.textContent = 'Access Denied. Please check the email.';
             errorMessage.classList.remove('hidden');
             setTimeout(() => emailInput.classList.remove('shake'), 820);
         }
 
         enterAppBtn.disabled = false;
-        enterAppBtn.textContent = 'Enter';
+        enterAppBtn.textContent = 'Continue';
     }
-    
-    /**
-     * Checks for a saved email on page load to allow automatic login.
-     */
+
     async function checkStoredSession() {
         const storedEmail = localStorage.getItem('approvedUserEmail');
         if (storedEmail) {
@@ -80,18 +67,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isStillApproved) {
                 grantAccessAndInitialize();
             } else {
-                localStorage.removeItem('approvedUserEmail'); // Clean up invalid stored email
+                localStorage.removeItem('approvedUserEmail');
             }
         }
     }
 
     // Bind login events
-    enterAppBtn.addEventListener('click', handleEmailLogin);
-    emailInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') handleEmailLogin();
-    });
+    if (enterAppBtn && emailInput) {
+        enterAppBtn.addEventListener('click', handleEmailLogin);
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleEmailLogin();
+            }
+        });
+    }
 
-    // Start the authentication check
+    // Start the process
     checkStoredSession();
 });
 
@@ -110,29 +102,16 @@ function initializeApp() {
 
     // --- 3. DOM ELEMENT CONNECTIONS ---
     const dom = {
-        // Editor Panel
         hookInput: document.getElementById('hook-input'),
         bodyInput: document.getElementById('body-input'),
         ctaInput: document.getElementById('cta-input'),
         copyScriptBtn: document.getElementById('copy-script-btn'),
         saveScriptBtn: document.getElementById('save-script-btn'),
-        newScriptBtn: document.getElementById('new-script-btn'), // Assuming new button exists
-
-        // Chat Panel
+        newScriptBtn: document.getElementById('new-script-btn'),
         chatHistoryEl: document.getElementById('ai-chat-history'),
         chatInput: document.getElementById('chat-input'),
         sendChatBtn: document.getElementById('send-chat-btn'),
         clearChatBtn: document.getElementById('clear-chat-btn'),
-        
-        // Modals & Banks
-        hookBankBtn: document.getElementById('hook-bank-btn'),
-        hookBankModal: document.getElementById('hook-bank-modal'),
-        closeHookModalBtn: document.getElementById('close-hook-modal-btn'),
-        hookBankList: document.getElementById('hook-bank-list'),
-        ctaBankBtn: document.getElementById('cta-bank-btn'),
-        ctaBankModal: document.getElementById('cta-bank-modal'),
-        closeCtaModalBtn: document.getElementById('close-cta-modal-btn'),
-        ctaBankList: document.getElementById('cta-bank-list'),
         settingsBtn: document.getElementById('settings-btn'),
         settingsModal: document.getElementById('settings-modal'),
         closeModalBtn: document.getElementById('close-modal-btn'),
@@ -140,21 +119,22 @@ function initializeApp() {
         scriptVaultModal: document.getElementById('script-vault-modal'),
         closeVaultModalBtn: document.getElementById('close-vault-modal-btn'),
         scriptVaultList: document.getElementById('script-vault-list'),
-        
-        // API Key Management
         apiKeyInput: document.getElementById('api-key-input'),
         saveApiKeyBtn: document.getElementById('save-api-key-btn'),
         deleteApiKeyBtn: document.getElementById('delete-api-key-btn'),
         apiKeyEntryState: document.getElementById('api-key-entry-state'),
         apiKeyManageState: document.getElementById('api-key-manage-state'),
         apiStatusLight: document.getElementById('api-status'),
+        hookBankBtn: document.getElementById('hook-bank-btn'),
+        hookBankModal: document.getElementById('hook-bank-modal'),
+        closeHookModalBtn: document.getElementById('close-hook-modal-btn'),
+        ctaBankBtn: document.getElementById('cta-bank-btn'),
+        ctaBankModal: document.getElementById('cta-bank-modal'),
+        closeCtaModalBtn: document.getElementById('close-cta-modal-btn'),
     };
 
     // --- 4. CORE WORKFLOW FUNCTIONS ---
 
-    /**
-     * Resets the application to its initial discovery state for a new script.
-     */
     function startNewScriptWorkflow() {
         state.appMode = 'DISCOVERY';
         state.chatHistory = [];
@@ -166,9 +146,6 @@ function initializeApp() {
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
     }
 
-    /**
-     * Handles sending a message, routing it based on the current app state.
-     */
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
@@ -217,7 +194,7 @@ function initializeApp() {
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
-                console.error("Error during AI response generation:", error);
+                console.error("Error during AI response:", error);
                 addMessageToChat({ role: 'model', text: 'An error occurred. Please try again.' });
             }
         } finally {
@@ -244,8 +221,7 @@ function initializeApp() {
         } else {
             const errorMessage = 'Script ဖန်တီးရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။ ကျေးဇူးပြု၍ စကားဆက်ပြောပါ သို့မဟုတ် ပြန်လည်ကြိုးစားပါ။';
             addMessageToChat({ role: 'model', text: errorMessage });
-            state.chatHistory.push({ role: 'model', parts: [{ text: errorMessage }] });
-            state.appMode = 'DISCOVERY'; // Revert to discovery on failure
+            state.appMode = 'DISCOVERY';
         }
         setInputsReadOnly(false);
     }
@@ -262,7 +238,6 @@ function initializeApp() {
             document.getElementById(`${partToEdit}-input`).value = revisedText;
             return `${partToEdit} ကို ပြင်ဆင်ပြီးပါပြီ။ နောက်ထပ် ဘာများ ပြင်ဆင်လိုပါသေးလဲ?`;
         }
-        // If not a specific edit request, treat as a general chat continuation
         return await generateChatResponse(state.chatHistory, state.stopGenerationController.signal);
     }
 
@@ -280,7 +255,7 @@ function initializeApp() {
         addMessageToChat({ role: 'model', text: "ကောင်းပါပြီ။ Script တစ်ခုလုံးရဲ့ Cohesion ကို သုံးသပ်ပါမယ်။" });
         const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
         const analysisReport = await performFullAnalysis(fullScript, state.stopGenerationController.signal);
-        state.appMode = 'EDITING'; // Return to editing after analysis
+        state.appMode = 'EDITING';
         return analysisReport;
     }
 
@@ -289,7 +264,7 @@ function initializeApp() {
     function addMessageToChat({ role, text }) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
-        messageDiv.innerHTML = marked.parse(text); // Assumes 'marked' library is loaded
+        messageDiv.innerHTML = marked.parse(text);
         dom.chatHistoryEl.appendChild(messageDiv);
         dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
     }
@@ -302,7 +277,7 @@ function initializeApp() {
         const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
         if (isLoading) {
             dom.chatInput.placeholder = "AI စဉ်းစားနေပါသည်...";
-            if (!skeleton) { // Add skeleton only if it doesn't exist
+            if (!skeleton) {
                 const skeletonDiv = document.createElement('div');
                 skeletonDiv.className = 'chat-message skeleton-message';
                 skeletonDiv.innerHTML = `<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div>`;
@@ -359,21 +334,17 @@ function initializeApp() {
 
         dom.clearChatBtn.addEventListener('click', () => {
             if (confirm('Chat history တစ်ခုလုံးကို ဖျက်ပြီး အစကပြန်စမှာလား?')) {
-                deleteChatHistory(); // From storage.js
+                deleteChatHistory();
                 startNewScriptWorkflow();
             }
         });
 
-        // New Script Button
-        if (dom.newScriptBtn) {
-            dom.newScriptBtn.addEventListener('click', () => {
-                if (confirm('လက်ရှိ script ကိုမသိမ်းရသေးပါက ပျောက်သွားပါမည်။ Script အသစ် စတင်မှာလား?')) {
-                    startNewScriptWorkflow();
-                }
-            });
-        }
+        dom.newScriptBtn.addEventListener('click', () => {
+            if (confirm('လက်ရှိ script ကိုမသိမ်းရသေးပါက ပျောက်သွားပါမည်။ Script အသစ် စတင်မှာလား?')) {
+                startNewScriptWorkflow();
+            }
+        });
         
-        // API Key Management
         dom.saveApiKeyBtn.addEventListener('click', () => {
             const key = dom.apiKeyInput.value.trim();
             if (key) {
@@ -396,7 +367,6 @@ function initializeApp() {
             }
         });
 
-        // Script Saving
         dom.saveScriptBtn.addEventListener('click', () => {
             const hook = dom.hookInput.value.trim();
             const body = dom.bodyInput.value.trim();
@@ -413,7 +383,6 @@ function initializeApp() {
             }
         });
         
-        // Modal Open/Close
         dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
         dom.closeModalBtn.addEventListener('click', () => closeModal(dom.settingsModal));
         dom.hookBankBtn.addEventListener('click', () => openModal(dom.hookBankModal));
@@ -426,7 +395,6 @@ function initializeApp() {
         });
         dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
 
-        // Global click to close modals
         window.addEventListener('click', (event) => {
             if (event.target == dom.settingsModal) closeModal(dom.settingsModal);
             if (event.target == dom.hookBankModal) closeModal(dom.hookBankModal);
@@ -438,10 +406,10 @@ function initializeApp() {
     // --- 7. SCRIPT VAULT & INSPIRATION BANK LOGIC ---
     
     function renderScriptVault() {
-        const scripts = getSavedScripts(); // from storage.js
+        const scripts = getSavedScripts();
         dom.scriptVaultList.innerHTML = '';
         if (scripts.length === 0) {
-            dom.scriptVaultList.innerHTML = '<p class="empty-vault-message">သင်သိမ်းဆည်းထားသော script များ မရှိသေးပါ။</p>';
+            dom.scriptVaultList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">သင်သိမ်းဆည်းထားသော script များ မရှိသေးပါ။</p>';
             return;
         }
         scripts.forEach(script => {
@@ -451,7 +419,7 @@ function initializeApp() {
                 <span class="vault-item-title">${script.title}</span>
                 <div class="vault-item-actions">
                     <button class="load-btn" data-id="${script.id}">Load</button>
-                    <button class="delete-btn danger" data-id="${script.id}">Delete</button>
+                    <button class="delete-btn" data-id="${script.id}">Delete</button>
                 </div>`;
             dom.scriptVaultList.appendChild(item);
         });
@@ -478,7 +446,7 @@ function initializeApp() {
             } else if (button.classList.contains('delete-btn')) {
                 if (confirm(`'${button.parentElement.previousElementSibling.textContent}' ကို တကယ်ဖျက်မှာလား?`)) {
                     deleteScript(scriptId);
-                    renderScriptVault(); // Re-render the vault list
+                    renderScriptVault();
                 }
             }
         });
@@ -491,8 +459,7 @@ function initializeApp() {
         updateApiStatus(!!existingKey);
         updateApiKeySettingsUI(!!existingKey);
         
-        initializeHookBank(); // from hookbank.js
-        // Logic from hookbank.js for CTA bank can be reused or abstracted
+        initializeHookBank();
         
         bindEventListeners();
         bindVaultActions();
@@ -500,6 +467,5 @@ function initializeApp() {
         startNewScriptWorkflow();
     }
 
-    // Start the application
     initialize();
 }
