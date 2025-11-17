@@ -178,12 +178,27 @@ function initializeApp() {
     }
     
     function extractJSON(text) {
-        const startIndex = text.indexOf('{');
-        const endIndex = text.lastIndexOf('}');
+        if (!text || typeof text !== 'string') return null;
+        let candidate = text.trim();
+        // If JSON is inside triple backticks (```json or ```), extract inner content
+        const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+        if (fenceMatch && fenceMatch[1]) candidate = fenceMatch[1].trim();
+        // Remove any surrounding inline code backticks
+        candidate = candidate.replace(/^`|`$/g, '').trim();
+        const startIndex = candidate.indexOf('{');
+        const endIndex = candidate.lastIndexOf('}');
         if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
-        const jsonString = text.substring(startIndex, endIndex + 1);
-        try { return JSON.parse(jsonString); } 
-        catch (error) { return null; }
+        const jsonString = candidate.substring(startIndex, endIndex + 1);
+        try { return JSON.parse(jsonString); }
+        catch (error) {
+            // Try a relaxed parse: replace single quotes with double quotes for common formatting mistakes
+            try {
+                const relaxed = jsonString.replace(/\n/g, ' ').replace(/'/g, '"');
+                return JSON.parse(relaxed);
+            } catch (e) {
+                return null;
+            }
+        }
     }
 
     async function handleSendMessage() {
