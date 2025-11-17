@@ -200,44 +200,77 @@ function initializeApp() {
 async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
+
         addMessageToChat({ role: 'user', text: userMessageText });
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
         setUiLoading(true);
+        
         try {
-            const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "1", "2", "3"];
-            if (angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
-                await generateFinalScript();
-            } else {
-                const aiResponseText = await generateChatResponse(state.chatHistory);
-                if (aiResponseText) {
+            // Simply get the next response from the AI
+            const aiResponseText = await generateChatResponse(state.chatHistory);
+
+            if (aiResponseText) {
+                // --- NEW SIGNAL-BASED LOGIC ---
+                if (aiResponseText.includes('[SCRIPT_GENERATED]')) {
+                    // The AI has signaled that a script was just generated.
+                    // Now we process it.
+                    await processGeneratedScript();
+                } else {
+                    // It's a normal message, so display it.
                     addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
             }
         } catch (error) {
-            console.error("Error in handleSendMessage:", error);
-            addMessageToChat({ role: 'model', text: `**Error:** An unexpected error occurred.` });
+            console.error("Critical Error in handleSendMessage:", error);
+            // ... (error handling remains the same) ...
         } finally {
             setUiLoading(false);
         }
     }
 
-    async function generateFinalScript() {
-        addMessageToChat({ role: 'model', text: 'Great choice. Generating script...' });
+    // RENAMED from generateFinalScript to processGeneratedScript for clarity
+    async function processGeneratedScript() {
+        // The AI's JSON response is the second to last message in the history.
+        // The last one is the '[SCRIPT_GENERATED]' signal.
+        if (state.chatHistory.length < 1) return;
+
         try {
-            const scriptJSON = await generateScriptFromHistory(state.chatHistory);
+            const jsonResponse = state.chatHistory[state.chatHistory.length - 1];
+            if (jsonResponse.role !== 'model') {
+                 // Fallback to find the last model response if signal is bundled
+                 const lastModelResponse = [...state.chatHistory].reverse().find(m => m.role === 'model');
+                 if(!lastModelResponse) throw new Error("Could not find the AI's JSON response in history.");
+                 scriptJSON = JSON.parse(lastModelResponse.parts[0].text);
+            } else {
+                scriptJSON = JSON.parse(jsonResponse.parts[0].text);
+            }
+
             if (scriptJSON && scriptJSON.scenes) {
                 const scenes = scriptJSON.scenes;
                 const hook = scenes[0]?.script_burmese || '';
                 const cta = scenes[scenes.length - 1]?.script_burmese || '';
                 const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
-                dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
-                showView('editor');
-            } else { throw new Error("Invalid JSON format from AI."); }
+                
+                dom.hookInput.value = hook;
+                dom.bodyInput.value = body;
+                dom.ctaInput.value = cta;
+                
+                showView('editor'); // Switch to the editor
+                
+                // Add a clean final message to the chat
+                const nextStepMessage = "The first draft is ready in the Editor. You can ask me for revisions now.";
+                addMessageToChat({ role: 'model', text: nextStepMessage });
+                state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+                
+                state.appMode = 'EDITING';
+            } else {
+                throw new Error("Parsed JSON is not in the expected format.");
+            }
         } catch(error) {
-            console.error("Error in generateFinalScript:", error);
-            addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try again.' });
+            console.error("Error processing generated script:", error);
+            addMessageToChat({ role: 'model', text: 'There was an error processing the generated script. Please try again.' });
         }
     }
 
