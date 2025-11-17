@@ -177,34 +177,60 @@ function initializeApp() {
         }
     }
 
-    async function generateFinalScript() {
+async function generateFinalScript() {
         state.appMode = 'GENERATING';
         addMessageToChat({ role: 'model', text: 'Excellent choice. Generating the full script...' });
         setInputsReadOnly(true);
-        try {
-            const scriptJSON = await generateScriptFromHistory(state.chatHistory);
-            if (scriptJSON && (scriptJSON.scenes || scriptJSON.script)) {
-                const scenes = scriptJSON.scenes || scriptJSON.script;
-                if (Array.isArray(scenes) && scenes.length > 0) {
-                    const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
-                    const hook = getLine(scenes[0]);
-                    const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
-                    const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
-                    dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
-                    let nextStepMessage = "The first draft is ready. You can now edit the text or ask me for revisions.";
-                    if (!cta.trim()) { nextStepMessage += "\n\nI noticed the CTA is empty. What action do you want viewers to take?"; }
-                    addMessageToChat({ role: 'model', text: nextStepMessage });
-                    state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-                    state.appMode = 'EDITING';
-                } else { throw new Error("Generated JSON has an empty 'scenes' array."); }
-            } else { throw new Error("Generated JSON is not in the expected format."); }
-        } catch(error) {
-            console.error("Error in generateFinalScript:", error);
-            addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try again.' });
-            state.appMode = 'DISCOVERY';
-        } finally {
-            setInputsReadOnly(false);
+
+        const MAX_RETRIES = 2; // Try a total of 2 times
+        let success = false;
+        let attempt = 1;
+
+        while (attempt <= MAX_RETRIES && !success) {
+            try {
+                console.log(`Attempting to generate script, try #${attempt}...`);
+                const scriptJSON = await generateScriptFromHistory(state.chatHistory);
+
+                if (scriptJSON && (scriptJSON.scenes || scriptJSON.script)) {
+                    const scenes = scriptJSON.scenes || scriptJSON.script;
+                    if (Array.isArray(scenes) && scenes.length > 0) {
+                        const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
+                        
+                        const hook = getLine(scenes[0]);
+                        const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
+                        const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
+
+                        dom.hookInput.value = hook;
+                        dom.bodyInput.value = body;
+                        dom.ctaInput.value = cta;
+
+                        let nextStepMessage = "The first draft is ready. You can now edit the text or ask me for revisions.";
+                        if (!cta.trim()) {
+                            nextStepMessage += "\n\nI noticed the CTA is empty. What action do you want your viewers to take?";
+                        }
+
+                        addMessageToChat({ role: 'model', text: nextStepMessage });
+                        state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+                        state.appMode = 'EDITING';
+                        success = true; // Mark as successful to exit the loop
+                    } else {
+                        throw new Error("Generated JSON has an empty 'scenes' array.");
+                    }
+                } else {
+                    throw new Error("Generated JSON is not in the expected format.");
+                }
+            } catch (error) {
+                console.error(`Attempt #${attempt} failed:`, error);
+                attempt++; // Increment attempt and loop again if possible
+                if (attempt > MAX_RETRIES) {
+                    // This is the final failure after all retries
+                    const recoveryMessage = "**တောင်းပန်ပါသည်။ Script ဖန်တီးရာတွင် ယာယီအမှားအယွင်းတစ်ခု ဖြစ်ပွားနေပါသည်။**\n\nခဏအကြာတွင် အောက်ပါစာကြောင်းကို copy ကူးပြီး ပြန်လည်ကြိုးစားကြည့်နိုင်ပါသည်:\n`'generate the script for the chosen angle again'`";
+                    addMessageToChat({ role: 'model', text: recoveryMessage });
+                    state.appMode = 'DISCOVERY'; // Reset mode to allow user to try again
+                }
+            }
         }
+        setInputsReadOnly(false);
     }
     
 async function handleEditRequest(instruction) {
