@@ -4,19 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ViralScript AI</title>
+    
+    <!-- Meta Tags for Mobile Experience -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Styles & Icon -->
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
     <div class="aurora-background"></div>
 
-    <!-- ACCESS GATE (Login Screen - Unchanged) -->
+    <!-- ACCESS GATE (Login Screen) -->
     <div id="access-gate">
         <div class="gate-content">
             <h1>ViralScript AI</h1>
@@ -100,39 +107,31 @@
         </button>
     </nav>
     
-    <!-- All Modals (Unchanged, they will work on top of any view) -->
-    <!-- (Your existing modal HTML for Settings, Vault, etc. goes here) -->
-        <!-- MODALS (The modal HTML can be copied from my previous messages, it has no errors) -->
+    <!-- MODALS SECTION -->
+
     <!-- Settings Modal -->
-<!-- MODALS -->
-<!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Settings</h2>
-                <span id="close-modal-btn" class="close-btn">&times;</span>
+                <span class="close-btn" data-modal-close>&times;</span>
             </div>
-
-            <!-- User Profile Section -->
             <div class="settings-section">
                 <h3>Your Profile</h3>
                 <p class="modal-subtitle" style="margin-top: 0.25rem; margin-bottom: 1rem;">
-                    AI will use this information to personalize its suggestions to match your brand.
+                    AI will use this to personalize suggestions to your brand.
                 </p>
                 <div class="profile-field">
                     <label for="profile-brand-info">My Brand is about...</label>
-                    <textarea id="profile-brand-info" rows="3" placeholder="e.g., Making complex marketing topics easy for beginners. My style is humorous and direct."></textarea>
+                    <textarea id="profile-brand-info" rows="3" placeholder="e.g., Making complex topics easy for beginners..."></textarea>
                 </div>
                 <div class="profile-field">
                     <label for="profile-audience-info">My Target Audience is...</label>
-                    <textarea id="profile-audience-info" rows="3" placeholder="e.g., Young entrepreneurs in Myanmar (20-30 years old) who want to grow their online business."></textarea>
+                    <textarea id="profile-audience-info" rows="3" placeholder="e.g., Young entrepreneurs in Myanmar (20-30)..."></textarea>
                 </div>
                 <button id="save-profile-btn" class="header-action-btn" style="width: 100%; margin-top: 1rem;">Save Profile</button>
             </div>
-            
             <hr class="settings-divider">
-
-            <!-- API Key Section -->
             <div class="settings-section">
                 <h3>API Key</h3>
                 <div id="api-key-entry-state">
@@ -141,84 +140,75 @@
                         <input type="password" id="api-key-input" placeholder="Enter your API key here...">
                         <button id="save-api-key-btn" class="header-action-btn" style="width: 100%;">Save Key</button>
                     </div>
-                     <p class="notice">
-                        <strong>Privacy:</strong> Your API key is stored locally in your browser and is never sent to our servers.
-                        <br>
-                        <strong>Cost:</strong> You are responsible for any costs associated with your own API key usage.
-                    </p>
+                     <p class="notice"><strong>Privacy:</strong> Your API key is stored locally and never sent to our servers.</p>
                 </div>
                 <div id="api-key-manage-state" class="hidden">
-                     <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved and active.</p>
+                     <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved.</p>
                      <button id="delete-api-key-btn" class="header-action-btn secondary" style="width: 100%; background-color: var(--danger-color); color: white;">Delete API Key</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Script Vault Modal -->
+    <div id="script-vault-modal" class="modal">
+         <div class="modal-content">
+             <div class="modal-header">
+                <h2>My Script Vault</h2>
+                <span class="close-btn" data-modal-close>&times;</span>
+            </div>
+            <p class="modal-subtitle">Load or delete your saved scripts.</p>
+            <div id="script-vault-list" class="script-vault-list"></div>
+        </div>
+    </div>
+
     <!-- Hook Bank Modal -->
     <div id="hook-bank-modal" class="modal">
-        <div class="modal-content hook-bank-content">
+        <div class="modal-content">
              <div class="modal-header">
-                <h2>Hook Inspiration Bank</h2>
-                <span id="close-hook-modal-btn" class="close-btn">&times;</span>
+                <h2>Hook Inspiration</h2>
+                <span class="close-btn" data-modal-close>&times;</span>
             </div>
-            <p class="modal-subtitle">Click any hook to copy it to your editor.</p>
+            <p class="modal-subtitle">Click any hook to start a conversation with the AI.</p>
             <div id="hook-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
     
     <!-- CTA Bank Modal -->
     <div id="cta-bank-modal" class="modal">
-        <div class="modal-content hook-bank-content">
+        <div class="modal-content">
              <div class="modal-header">
-                <h2>CTA Inspiration Bank</h2>
-                <span id="close-cta-modal-btn" class="close-btn">&times;</span>
+                <h2>CTA Inspiration</h2>
+                <span class="close-btn" data-modal-close>&times;</span>
             </div>
-            <p class="modal-subtitle">Click any CTA to copy it to your editor.</p>
+            <p class="modal-subtitle">Click any CTA to start a conversation with the AI.</p>
             <div id="cta-bank-list" class="hook-bank-list"></div>
         </div>
     </div>
-    
-    <!-- Script Vault Modal -->
-    <div id="script-vault-modal" class="modal">
-         <div class="modal-content hook-bank-content">
-             <div class="modal-header">
-                <h2>My Script Vault</h2>
-                <span id="close-vault-modal-btn" class="close-btn">&times;</span>
-            </div>
-            <p class="modal-subtitle">Load or delete your previously saved scripts.</p>
-            <div id="script-vault-list" class="script-vault-list"></div>
-        </div>
-    </div>
 
-    <!-- ... (Other modals are above this) ... -->
-
-    <!-- NEW: Welcome Guide Modal -->
+    <!-- Welcome Guide Modal -->
     <div id="welcome-modal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
              <div class="modal-header">
                 <h2>Welcome to ViralScript AI!</h2>
             </div>
-            <p class="modal-subtitle" style="margin-top: -1rem; margin-bottom: 1.5rem;">Your new AI Creative Partner.</p>
-            
             <div class="welcome-step">
                 <h4>1. Start with Your Idea</h4>
-                <p>In the "AI Director" chat, simply type the topic or idea for your video.</p>
+                <p>In the "AI Director" chat, type your video topic.</p>
             </div>
             <div class="welcome-step">
                 <h4>2. Choose Your Angle</h4>
-                <p>The AI will propose <strong>3 creative angles</strong>. Reply with the number you like (e.g., "Use angle 2").</p>
+                <p>The AI will propose <strong>3 creative angles</strong>. Reply with the number you like.</p>
             </div>
             <div class="welcome-step">
                 <h4>3. Generate & Edit</h4>
-                <p>The AI will write the full script. You can then edit it yourself or ask the AI for revisions!</p>
+                <p>The AI writes the full script and automatically takes you to the Editor.</p>
             </div>
-
-            <button id="close-welcome-btn" class="header-action-btn" style="width: 100%; margin-top: 2rem;">Got It, Let's Start!</button>
+            <button id="close-welcome-btn" class="header-action-btn" style="width: 100%; margin-top: 2rem;">Let's Start!</button>
         </div>
     </div>
 
-
+    <!-- SCRIPTS -->
     <script src="assets/js/marked.min.js"></script>
     <script src="config.js"></script>
     <script src="assets/js/storage.js"></script>

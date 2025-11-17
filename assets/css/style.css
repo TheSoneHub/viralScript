@@ -15,6 +15,8 @@
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --nav-height: 65px;
+    /* This variable will be set by JavaScript */
+    --app-height: 100vh;
 }
 
 * {
@@ -32,8 +34,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: var(--font-primary);
-    /* Use the JavaScript variable for a stable height */
-    height: var(--app-height); 
+    height: var(--app-height);
     width: 100vw;
     overflow: hidden;
     display: flex;
@@ -129,13 +130,12 @@ body {
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-/* Find the original '.mobile-app-wrapper' and replace it with this */
+/* === 3. MOBILE-FIRST APP STRUCTURE === */
 .mobile-app-wrapper {
     flex-grow: 1;
     position: relative;
     overflow: hidden;
-    /* This is a key part of the fix */
-    display: flex; 
+    display: flex;
     flex-direction: column;
 }
 
@@ -148,13 +148,10 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-    opacity: 1;
-    transform: scale(1);
+    transition: opacity 0.2s ease-in-out;
 }
 
 .app-view.hidden {
-    transform: scale(0.95);
     opacity: 0;
     pointer-events: none;
 }
@@ -383,7 +380,6 @@ textarea:focus, #chat-input:focus {
     width: 70%;
     border-radius: 16px;
     padding: 1rem 1.2rem;
-    background-color: var(--ai-msg-bg);
 }
 
 .skeleton-line {
@@ -418,7 +414,7 @@ textarea:focus, #chat-input:focus {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0,0,0,0.7);
     backdrop-filter: blur(5px);
 }
 
@@ -430,7 +426,6 @@ textarea:focus, #chat-input:focus {
     width: 90%;
     max-width: 500px;
     border-radius: 16px;
-    position: relative;
 }
 
 .modal-header {
@@ -457,22 +452,112 @@ textarea:focus, #chat-input:focus {
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
 }
-/* Styles for specific modals like vault, profile, etc. */
-.settings-section { margin-bottom: 2rem; }
-.settings-section:last-child { margin-bottom: 0; }
-.settings-divider { border: none; height: 1px; background-color: var(--border-color); margin: 2rem 0; }
-.profile-field { margin-bottom: 1rem; }
-.profile-field label { display: block; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem; }
-.profile-field textarea { min-height: 80px; font-family: var(--font-primary); font-size: 0.95rem; }
-.api-key-wrapper input { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; margin-bottom: 1rem; }
-.notice { font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; line-height: 1.6; }
 
+.hook-bank-list, .script-vault-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+.hook-category {
+    margin-bottom: 2rem;
+}
+
+.hook-category h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.hook-item {
+    background-color: var(--input-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+}
+
+.vault-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--input-bg);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+.settings-divider {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 2rem 0;
+}
+.profile-field {
+    margin-bottom: 1rem;
+}
+.profile-field label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+.profile-field textarea {
+    min-height: 80px;
+    font-family: var(--font-primary);
+    font-size: 0.95rem;
+}
+
+.welcome-step {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+    position: relative;
+    border-left: 2px solid var(--border-color);
+}
+.welcome-step h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+.welcome-step p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+.welcome-step::before {
+    content: '✓';
+    position: absolute;
+    left: -11px;
+    top: 0px;
+    width: 22px;
+    height: 22px;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
 
 /* === 7. DESKTOP RESPONSIVENESS === */
 @media (min-width: 1024px) {
     body {
         display: block;
+        height: 100vh; /* Revert to vh for desktop */
     }
+    
     .mobile-app-wrapper {
         display: grid;
         grid-template-columns: 1.2fr 1fr;
@@ -481,6 +566,7 @@ textarea:focus, #chat-input:focus {
         gap: 1.5rem;
         padding: 1.5rem;
     }
+    
     .app-view {
         position: static;
         transform: none !important;
@@ -489,28 +575,31 @@ textarea:focus, #chat-input:focus {
         border: 1px solid var(--border-color);
         border-radius: 16px;
         background-color: var(--panel-bg);
+        height: auto; /* Let grid control height */
     }
+
     .app-view.hidden {
         display: flex !important;
     }
+
     .view-header {
         background-color: transparent;
         padding: 1rem 1.5rem;
     }
+
     .view-header h1 {
         font-size: 1.5rem;
     }
+    
     .mobile-nav {
         display: none;
     }
-    .script-wrapper,
-    .chat-history {
+    
+    .script-wrapper, .chat-history {
         padding: 1.5rem;
     }
+    
     .chat-input-area {
-        background-color: rgba(0, 0, 0, 0.2);
-    }
-    .modal-content {
-        padding: 2rem;
+        background-color: rgba(0,0,0,0.2);
     }
 }
