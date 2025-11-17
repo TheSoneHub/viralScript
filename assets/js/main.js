@@ -202,6 +202,13 @@ function initializeApp() {
         }
     }
 
+// /assets/js/main.js
+
+// ... (all other functions in main.js remain the same) ...
+
+    /**
+     * Generates the script, parses the new scene-based JSON, and populates the editor.
+     */
     async function generateFinalScript() {
         state.appMode = 'GENERATING';
         addMessageToChat({ role: 'model', text: 'အချက်အလက်များ ပြည့်စုံပါပြီ။ Script ကို ခဏအကြာ ဖန်တီးပေးနေပါသည်...' });
@@ -209,10 +216,30 @@ function initializeApp() {
 
         const scriptJSON = await generateScriptFromHistory(state.chatHistory, state.stopGenerationController.signal);
         
-        if (scriptJSON && scriptJSON.hook && scriptJSON.body && scriptJSON.cta) {
-            dom.hookInput.value = scriptJSON.hook;
-            dom.bodyInput.value = scriptJSON.body;
-            dom.ctaInput.value = scriptJSON.cta;
+        // --- NEW LOGIC TO PARSE SCENE-BASED JSON ---
+        if (scriptJSON && scriptJSON.scenes && scriptJSON.scenes.length > 0) {
+            const scenes = scriptJSON.scenes;
+            
+            // 1. Get the Hook from the first scene
+            const hook = scenes[0].script_burmese || '';
+
+            // 2. Get the CTA from the last scene
+            const cta = scenes.length > 1 ? scenes[scenes.length - 1].script_burmese : '';
+
+            // 3. Construct the Body from all scenes in between
+            const bodyScenes = scenes.slice(1, scenes.length - 1);
+            const body = bodyScenes.map(scene => scene.script_burmese).join('\n\n').trim();
+
+            // If there's only one scene, use it for the hook and leave others blank
+            if (scenes.length === 1) {
+                dom.hookInput.value = hook;
+                dom.bodyInput.value = '';
+                dom.ctaInput.value = '';
+            } else {
+                dom.hookInput.value = hook;
+                dom.bodyInput.value = body;
+                dom.ctaInput.value = cta;
+            }
             
             const nextStepMessage = "Script အကြမ်းကို ဖန်တီးပြီးပါပြီ။ ဘယ်အပိုင်းကိုမဆို (Hook, Body, CTA) ရွေးပြီး ပြင်ခိုင်းနိုင်ပါတယ်။ 'final check' လို့ရိုက်ပြီး နောက်ဆုံးအဆင့်စစ်ဆေးမှု ပြုလုပ်နိုင်ပါတယ်။";
             addMessageToChat({ role: 'model', text: nextStepMessage });
@@ -221,10 +248,12 @@ function initializeApp() {
         } else {
             const errorMessage = 'Script ဖန်တီးရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။ ကျေးဇူးပြု၍ စကားဆက်ပြောပါ သို့မဟုတ် ပြန်လည်ကြိုးစားပါ။';
             addMessageToChat({ role: 'model', text: errorMessage });
-            state.appMode = 'DISCOVERY';
+            state.appMode = 'DISCOVERY'; // Revert to discovery on failure
         }
         setInputsReadOnly(false);
     }
+    
+// ... (all other functions in main.js remain the same) ...
     
     async function handleEditRequest(instruction) {
         let partToEdit = null, currentText = '';
