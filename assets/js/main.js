@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive version with all features and fixes
+// /assets/js/main.js - Definitive version with all fixes and correct scope
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
@@ -9,10 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessage = document.getElementById('gate-error-message');
 
     async function validateEmail(email) {
-        if (!email || !EMAIL_VALIDATION_API_URL) {
-            console.error("Email or API URL is missing.");
-            return false;
-        }
+        if (!email || !EMAIL_VALIDATION_API_URL) { return false; }
         const url = `${EMAIL_VALIDATION_API_URL}?email=${encodeURIComponent(email.trim().toLowerCase())}`;
         try {
             const response = await fetch(url);
@@ -21,10 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return data.status === 'success';
         } catch (error) {
             console.error('Email validation fetch failed:', error);
-            if (errorMessage) {
-                errorMessage.textContent = 'Could not verify email. Check connection.';
-                errorMessage.classList.remove('hidden');
-            }
+            if (errorMessage) { errorMessage.textContent = 'Could not verify email. Check connection.'; }
             return false;
         }
     }
@@ -43,22 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!emailInput || !enterAppBtn || enterAppBtn.disabled) return;
         const email = emailInput.value;
         if (!email) return;
-
         enterAppBtn.disabled = true;
         enterAppBtn.textContent = 'Verifying...';
         if(errorMessage) errorMessage.classList.add('hidden');
-
         const isApproved = await validateEmail(email);
-
         if (isApproved) {
             localStorage.setItem('approvedUserEmail', email);
             grantAccessAndInitialize();
         } else {
             emailInput.classList.add('shake');
-            if (errorMessage) {
-                errorMessage.textContent = 'Access Denied. Please check the email.';
-                errorMessage.classList.remove('hidden');
-            }
+            if (errorMessage) { errorMessage.textContent = 'Access Denied. Please check the email.'; }
             setTimeout(() => emailInput.classList.remove('shake'), 820);
             enterAppBtn.disabled = false;
             enterAppBtn.textContent = 'Continue';
@@ -68,19 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkStoredSession() {
         const storedEmail = localStorage.getItem('approvedUserEmail');
         if (storedEmail) {
-            if(enterAppBtn) {
-                enterAppBtn.textContent = 'Checking session...';
-                enterAppBtn.disabled = true;
-            }
+            if(enterAppBtn) { enterAppBtn.disabled = true; }
             const isStillApproved = await validateEmail(storedEmail);
             if (isStillApproved) {
                 grantAccessAndInitialize();
             } else {
                 localStorage.removeItem('approvedUserEmail');
-                if(enterAppBtn) {
-                    enterAppBtn.textContent = 'Continue';
-                    enterAppBtn.disabled = false;
-                }
+                if(enterAppBtn) { enterAppBtn.disabled = false; }
             }
         }
     }
@@ -88,27 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (enterAppBtn && emailInput) {
         enterAppBtn.addEventListener('click', handleEmailLogin);
         emailInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleEmailLogin();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); handleEmailLogin(); }
         });
     }
-
     checkStoredSession();
 });
 
-
 // =================================================================
-// MAIN APP LOGIC - Runs only after successful authentication
+// MAIN APP LOGIC - ALL HELPER FUNCTIONS MUST BE INSIDE THIS
 // =================================================================
 function initializeApp() {
-    let state = {
-        appMode: 'DISCOVERY',
-        chatHistory: [],
-        isAwaitingResponse: false,
-    };
-
+    let state = { appMode: 'DISCOVERY', chatHistory: [], isAwaitingResponse: false };
     const dom = {
         hookInput: document.getElementById('hook-input'),
         bodyInput: document.getElementById('body-input'),
@@ -144,7 +116,7 @@ function initializeApp() {
     };
 
     function showWelcomeGuideIfNeeded() {
-        if (!hasSeenWelcomeGuide()) {
+        if (!hasSeenWelcomeGuide() && dom.welcomeModal) {
             openModal(dom.welcomeModal);
         }
     }
@@ -197,83 +169,68 @@ function initializeApp() {
         } catch (error) {
             console.error("Critical Error in handleSendMessage:", error);
             let userFriendlyError = "An unexpected error occurred. Please try again.";
-            if (error.message === "API_KEY_MISSING") {
-                userFriendlyError = "Your API Key is missing. Please add it in Settings (⚙️).";
-            } else if (error.message === "API_KEY_INVALID") {
-                userFriendlyError = "Your API Key is invalid. Please check it in Settings (⚙️).";
-            }
+            if (error.message === "API_KEY_MISSING") { userFriendlyError = "Your API Key is missing. Please add it in Settings (⚙️)."; } 
+            else if (error.message === "API_KEY_INVALID") { userFriendlyError = "Your API Key is invalid. Please check it in Settings (⚙️)."; }
             addMessageToChat({ role: 'model', text: `**Error:** ${userFriendlyError}` });
         } finally {
             setUiLoading(false);
         }
     }
 
-/**
- * v6: Implements a "State-Aware" decision tree to eliminate mode confusion.
- * @returns {object} A Gemini-formatted instruction object.
- */
-function getSystemInstruction() {
-    const userProfile = getUserProfile();
-    let personalizationLayer = "The user has not provided a profile. Assume a general, professional style.";
-    
-    if (userProfile && (userProfile.brand || userProfile.audience)) {
-        personalizationLayer = `
-        **USER PROFILE (MUST TAILOR ALL RESPONSES TO THIS):**
-        - **Brand Identity:** "${userProfile.brand || 'Not provided'}"
-        - **Target Audience:** "${userProfile.audience || 'Not provided'}"
-        `;
+    async function generateFinalScript() {
+        state.appMode = 'GENERATING';
+        addMessageToChat({ role: 'model', text: 'Excellent choice. Generating the full script...' });
+        setInputsReadOnly(true);
+        try {
+            const scriptJSON = await generateScriptFromHistory(state.chatHistory);
+            if (scriptJSON && (scriptJSON.scenes || scriptJSON.script)) {
+                const scenes = scriptJSON.scenes || scriptJSON.script;
+                if (Array.isArray(scenes) && scenes.length > 0) {
+                    const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
+                    const hook = getLine(scenes[0]);
+                    const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
+                    const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
+                    dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
+                    let nextStepMessage = "The first draft is ready. You can now edit the text or ask me for revisions.";
+                    if (!cta.trim()) { nextStepMessage += "\n\nI noticed the CTA is empty. What action do you want viewers to take?"; }
+                    addMessageToChat({ role: 'model', text: nextStepMessage });
+                    state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+                    state.appMode = 'EDITING';
+                } else { throw new Error("Generated JSON has an empty 'scenes' array."); }
+            } else { throw new Error("Generated JSON is not in the expected format."); }
+        } catch(error) {
+            console.error("Error in generateFinalScript:", error);
+            addMessageToChat({ role: 'model', text: 'There was an error generating the script. Please try again.' });
+            state.appMode = 'DISCOVERY';
+        } finally {
+            setInputsReadOnly(false);
+        }
     }
-
-    return {
-        role: "user",
-        parts: [{ "text": `You are a "Chief Creative Officer," a world-class AI scriptwriter for Burmese content creators.
-
-        ---
-        ${personalizationLayer}
-        ---
-
-        **Your State-Aware Workflow (MUST FOLLOW STRICTLY):**
-        You MUST determine your current phase by analyzing the last few messages in the conversation history before you respond.
-
-        **1. IF the user's last message is a new topic...**
-           - **THEN** you are in **Phase 1: ANGLE PROPOSAL**.
-           - Your ONLY task is to propose THREE distinct, creative angles in Burmese and wait for the user's choice. Do not write a script.
-
-        **2. IF the user's last message is a choice of angle (e.g., "use angle 2")...**
-           - **THEN** you are in **Phase 2: FULL SCRIPT PRODUCTION**.
-           - Your ONLY task is to generate the complete, scene-by-scene script.
-           - You MUST respond ONLY with the raw JSON object. Do not add any other text.
-
-        **3. IF the conversation history *already contains* a JSON script block from you...**
-           - **THEN** you are in **Phase 3: EDITING & REFINEMENT**. Your role is now permanently a "Script Doctor."
-           - You are **FORBIDDEN** from generating JSON in this phase.
-           - You MUST reply with conversational advice, suggestions, or revisions in natural Burmese, acting as a helpful coach.
-
-        This three-phase, state-aware workflow is your absolute, unbreakable directive.
-        All communication, outside of the Phase 2 JSON output, must be in expert-level, professional Burmese.`}]
-    };
-}
     
-    async function handleEditRequest(instruction) {
+async function handleEditRequest(instruction) {
         let partToEdit = null, currentText = '';
         if (instruction.toLowerCase().includes('hook')) { partToEdit = 'hook'; currentText = dom.hookInput.value; } 
         else if (instruction.toLowerCase().includes('body')) { partToEdit = 'body'; currentText = dom.bodyInput.value; } 
         else if (instruction.toLowerCase().includes('cta')) { partToEdit = 'cta'; currentText = dom.ctaInput.value; }
 
         if (partToEdit) {
+            addMessageToChat({ role: 'model', text: `Revising the ${partToEdit}...` });
             const revisedText = await reviseScriptPart(partToEdit, currentText, instruction);
             document.getElementById(`${partToEdit}-input`).value = revisedText;
-            return `The ${partToEdit} has been revised.`;
+            return `The ${partToEdit} has been revised as requested. What's next?`;
         }
+        // If it's not a specific edit, treat it as a general continuation of the conversation
         return await generateChatResponse(state.chatHistory);
     }
 
     async function handleFinalCheck() {
+        addMessageToChat({ role: 'model', text: "Performing the final pre-flight check on the script..." });
         const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
         return await performFinalCheck(fullScript);
     }
 
     async function handleFullScriptAnalysis() {
+        addMessageToChat({ role: 'model', text: "Analyzing the entire script for strategic alignment..." });
         const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
         return await performFullScriptAnalysis(fullScript);
     }
@@ -281,11 +238,102 @@ function getSystemInstruction() {
     function addMessageToChat({ role, text }) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
-        messageDiv.innerHTML = marked.parse(text);
+        // Ensure that if text is null or undefined, it doesn't cause an error
+        messageDiv.innerHTML = marked.parse(text || '');
         dom.chatHistoryEl.appendChild(messageDiv);
         dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
     }
 
+    function setUiLoading(isLoading) {
+        state.isAwaitingResponse = isLoading;
+        dom.chatInput.disabled = isLoading;
+        dom.sendChatBtn.disabled = isLoading;
+
+        const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
+        if (isLoading) {
+            dom.chatInput.placeholder = "AI is thinking...";
+            if (!skeleton) {
+                const skeletonDiv = document.createElement('div');
+                skeletonDiv.className = 'chat-message skeleton-message';
+                skeletonDiv.innerHTML = `<div class="skeleton-line"></div><div class="skeleton-line short"></div>`;
+                dom.chatHistoryEl.appendChild(skeletonDiv);
+                dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
+            }
+        } else {
+            dom.chatInput.placeholder = "Chat with the AI Director...";
+            if (skeleton) {
+                skeleton.remove();
+            }
+        }
+    }
+
+    function clearEditor() {
+        dom.hookInput.value = '';
+        dom.bodyInput.value = '';
+        dom.ctaInput.value = '';
+    }
+
+    function setInputsReadOnly(isReadOnly) {
+        dom.hookInput.readOnly = isReadOnly;
+        dom.bodyInput.readOnly = isReadOnly;
+        dom.ctaInput.readOnly = isReadOnly;
+    }
+
+    function openModal(modalElement) {
+        if (modalElement) {
+            modalElement.style.display = 'block';
+        }
+    }
+
+    function closeModal(modalElement) {
+        if (modalElement) {
+            modalElement.style.display = 'none';
+        }
+    }
+
+    function updateApiStatus(isKeySet) {
+        if (dom.apiStatusLight) {
+            dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red';
+            dom.apiStatusLight.title = isKeySet ? 'API Key is set' : 'API Key is required';
+        }
+    }
+
+    function updateApiKeySettingsUI(isKeySet) {
+        if (dom.apiKeyEntryState && dom.apiKeyManageState) {
+            dom.apiKeyEntryState.classList.toggle('hidden', isKeySet);
+            dom.apiKeyManageState.classList.toggle('hidden', !isKeySet);
+        }
+    }
+
+    function renderScriptVault() {
+        const scripts = getSavedScripts();
+        dom.scriptVaultList.innerHTML = '';
+        if (scripts.length === 0) {
+            dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>';
+            return;
+        }
+        scripts.forEach(script => {
+            const item = document.createElement('div');
+            item.className = 'vault-item';
+            item.innerHTML = `
+                <span class="vault-item-title">${script.title}</span>
+                <div class="vault-item-actions">
+                    <button class="load-btn" data-id="${script.id}">Load</button>
+                    <button class="delete-btn" data-id="${script.id}">Delete</button>
+                </div>`;
+            dom.scriptVaultList.appendChild(item);
+        });
+    }
+
+    
+    // Re-pasting inner functions for absolute clarity
+    function addMessageToChat({ role, text }) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
+        messageDiv.innerHTML = marked.parse(text);
+        dom.chatHistoryEl.appendChild(messageDiv);
+        dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
+    }
     function setUiLoading(isLoading) {
         state.isAwaitingResponse = isLoading;
         dom.chatInput.disabled = isLoading;
@@ -302,22 +350,16 @@ function getSystemInstruction() {
             if (skeleton) skeleton.remove();
         }
     }
-
     function clearEditor() { dom.hookInput.value = ''; dom.bodyInput.value = ''; dom.ctaInput.value = ''; }
     function setInputsReadOnly(isReadOnly) { dom.hookInput.readOnly = isReadOnly; dom.bodyInput.readOnly = isReadOnly; dom.ctaInput.readOnly = isReadOnly; }
-    function openModal(modalElement) { modalElement.style.display = 'block'; }
-    function closeModal(modalElement) { modalElement.style.display = 'none'; }
-    
+    function openModal(modalElement) { if(modalElement) modalElement.style.display = 'block'; }
+    function closeModal(modalElement) { if(modalElement) modalElement.style.display = 'none'; }
     function updateApiStatus(isKeySet) { dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red'; }
     function updateApiKeySettingsUI(isKeySet) { dom.apiKeyEntryState.classList.toggle('hidden', isKeySet); dom.apiKeyManageState.classList.toggle('hidden', !isKeySet); }
-
     function renderScriptVault() {
         const scripts = getSavedScripts();
         dom.scriptVaultList.innerHTML = '';
-        if (scripts.length === 0) {
-            dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>';
-            return;
-        }
+        if (scripts.length === 0) { dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>'; return; }
         scripts.forEach(script => {
             const item = document.createElement('div');
             item.className = 'vault-item';
@@ -328,11 +370,7 @@ function getSystemInstruction() {
 
     function bindEventListeners() {
         dom.sendChatBtn.addEventListener('click', handleSendMessage);
-        dom.chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) {
-                e.preventDefault(); handleSendMessage();
-            }
-        });
+        dom.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) { e.preventDefault(); handleSendMessage(); } });
         dom.clearChatBtn.addEventListener('click', () => { if (confirm('Clear chat and start over?')) { startNewScriptWorkflow(); } });
         dom.newScriptBtn.addEventListener('click', () => { if (confirm('Start a new script?')) { startNewScriptWorkflow(); } });
         dom.settingsBtn.addEventListener('click', () => {
@@ -357,23 +395,12 @@ function getSystemInstruction() {
         }
         dom.saveApiKeyBtn.addEventListener('click', () => {
             const key = dom.apiKeyInput.value.trim();
-            if (key) {
-                saveApiKey(key);
-                updateApiStatus(true);
-                updateApiKeySettingsUI(true);
-                alert('API Key saved!');
-                closeModal(dom.settingsModal);
-            }
+            if (key) { saveApiKey(key); updateApiStatus(true); updateApiKeySettingsUI(true); alert('API Key saved!'); closeModal(dom.settingsModal); }
         });
-        dom.deleteApiKeyBtn.addEventListener('click', () => {
-            if (confirm('Delete API Key?')) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); }
-        });
+        dom.deleteApiKeyBtn.addEventListener('click', () => { if (confirm('Delete API Key?')) { deleteApiKey(); updateApiStatus(false); updateApiKeySettingsUI(false); } });
         dom.saveScriptBtn.addEventListener('click', () => {
             const title = prompt("Script Title:", "Untitled Script");
-            if (title) {
-                saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value });
-                alert(`Script '${title}' saved!`);
-            }
+            if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); alert(`Script '${title}' saved!`); }
         });
         dom.closeModalBtn.addEventListener('click', () => closeModal(dom.settingsModal));
         dom.hookBankBtn.addEventListener('click', () => openModal(dom.hookBankModal));
@@ -382,7 +409,7 @@ function getSystemInstruction() {
         dom.closeCtaModalBtn.addEventListener('click', () => closeModal(dom.ctaBankModal));
         dom.myScriptsBtn.addEventListener('click', () => { renderScriptVault(); openModal(dom.scriptVaultModal); });
         dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
-        dom.closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); });
+        if(dom.closeWelcomeBtn) { dom.closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); }); }
         window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
     }
 
@@ -393,13 +420,7 @@ function getSystemInstruction() {
             const scriptId = parseInt(button.dataset.id);
             if (button.classList.contains('load-btn')) {
                 const scriptToLoad = getSavedScripts().find(s => s.id === scriptId);
-                if (scriptToLoad) {
-                    dom.hookInput.value = scriptToLoad.hook;
-                    dom.bodyInput.value = scriptToLoad.body;
-                    dom.ctaInput.value = scriptToLoad.cta;
-                    state.appMode = 'EDITING';
-                    closeModal(dom.scriptVaultModal);
-                }
+                if (scriptToLoad) { dom.hookInput.value = scriptToLoad.hook; dom.bodyInput.value = scriptToLoad.body; dom.ctaInput.value = scriptToLoad.cta; state.appMode = 'EDITING'; closeModal(dom.scriptVaultModal); }
             } else if (button.classList.contains('delete-btn')) {
                 if (confirm('Delete this script?')) { deleteScript(scriptId); renderScriptVault(); }
             }
