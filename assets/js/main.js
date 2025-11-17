@@ -176,7 +176,7 @@ function initializeApp() {
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
     }
 
-    async function handleSendMessage() {
+async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
 
@@ -190,15 +190,28 @@ function initializeApp() {
             const urlRegex = /^(https?:\/\/)/i;
             const analysisTriggers = ["script သုံးသပ်ပေး", "full analysis", "အားလုံးကိုစစ်ပေး", "review script", "analyze script"];
             
-            if (analysisTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
+            // --- NEW LOGIC: Check if the user is choosing an angle ---
+            const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "၁", "၂", "၃", "1", "2", "3", "တစ်ခု", "ဒုတိယ", "တတိယ"];
+            const isChoosingAngle = angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t));
+
+            if (isChoosingAngle && state.appMode !== 'GENERATING') {
+                // If the user chose an angle, trigger the final script generation directly.
+                await generateFinalScript();
+                aiResponseText = null; // Prevent any other message from being shown.
+
+            } else if (analysisTriggers.some(t => userMessageText.toLowerCase().includes(t))) {
                 aiResponseText = await handleFullScriptAnalysis(); 
+            
             } else if (urlRegex.test(userMessageText)) {
                 aiResponseText = await deconstructViralVideo(userMessageText);
+            
             } else if (userMessageText.toLowerCase().includes('final check')) {
                 aiResponseText = await handleFinalCheck();
+            
             } else {
+                // If it's none of the above, proceed with the normal workflow
                 switch (state.appMode) {
-                    case 'DISCOVERY':
+                    case 'DISCOVERY': // This will now mostly handle the initial topic submission
                         const discoveryResponse = await generateChatResponse(state.chatHistory);
                         if (discoveryResponse && discoveryResponse.includes("[PROCEED_TO_GENERATION]")) {
                             await generateFinalScript();
