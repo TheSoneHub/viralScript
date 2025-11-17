@@ -187,21 +187,33 @@ function initializeApp() {
     }
 
     function processAndFillScript(scriptJSON) {
-        if (scriptJSON && scriptJSON.scenes && Array.isArray(scriptJSON.scenes)) {
+        try {
+            if (!scriptJSON || !scriptJSON.scenes || !Array.isArray(scriptJSON.scenes) || scriptJSON.scenes.length === 0) {
+                throw new Error("Invalid or empty scenes array in JSON.");
+            }
+
             const scenes = scriptJSON.scenes;
             let hook = '', body = '', cta = '';
 
-            const getLine = (scene) => scene?.script_burmese || '';
+            const getSceneText = (scene) => {
+                if (!scene) return '';
+                return scene.script_burmese || scene.dialogue_burmese || '';
+            };
 
             if (scenes.length === 1) {
-                hook = getLine(scenes[0]);
+                hook = getSceneText(scenes[0]);
             } else if (scenes.length === 2) {
-                hook = getLine(scenes[0]);
-                body = getLine(scenes[1]);
-            } else if (scenes.length > 2) {
-                hook = getLine(scenes[0]);
-                cta = getLine(scenes[scenes.length - 1]);
-                body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
+                hook = getSceneText(scenes[0]);
+                cta = getSceneText(scenes[1]); // A 2-scene script is a Hook and a CTA
+            } else { // 3 or more scenes
+                hook = getSceneText(scenes[0]);
+                cta = getSceneText(scenes[scenes.length - 1]);
+                body = scenes.slice(1, -1).map(getSceneText).join('\n\n').trim();
+            }
+
+            // Final check to ensure we extracted something
+            if (!hook && !body && !cta) {
+                throw new Error("Failed to extract any text from the scenes.");
             }
 
             dom.hookInput.value = hook;
@@ -214,9 +226,10 @@ function initializeApp() {
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
-        } else {
-            console.error("Janitor received invalid JSON:", scriptJSON);
-            const recoveryMessage = "It seems there was an error generating the script format. Please try again.";
+
+        } catch (error) {
+            console.error("Error in processAndFillScript:", error);
+            const recoveryMessage = "It seems there was an error processing the script format. Please try asking again.";
             addMessageToChat({ role: 'model', text: recoveryMessage });
         }
     }
