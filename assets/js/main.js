@@ -148,27 +148,23 @@ function initializeApp() {
             const scenes = scriptJSON.scenes || scriptJSON.script;
             const getLine = (scene) => scene.script_burmese || scene.dialogue_burmese || (scene.dialogue && Array.isArray(scene.dialogue) ? scene.dialogue.map(d => d.line).join(' ') : '') || '';
             
-            if (Array.isArray(scenes) && scenes.length > 0) {
-                const hook = getLine(scenes[0]);
-                const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
-                const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
-                
-                dom.hookInput.value = hook;
-                dom.bodyInput.value = body;
-                dom.ctaInput.value = cta;
-                
-                showView('editor');
-                
-                const nextStepMessage = "The first draft is ready in the Editor. You can ask me for revisions now.";
-                addMessageToChat({ role: 'model', text: nextStepMessage });
-                state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-                state.appMode = 'EDITING';
-            } else {
-                 throw new Error("JSON 'scenes' array is empty or not an array.");
-            }
+            const hook = getLine(scenes[0]);
+            const cta = (scenes.length > 1) ? getLine(scenes[scenes.length - 1]) : '';
+            const body = scenes.slice(1, -1).map(getLine).join('\n\n').trim();
+
+            dom.hookInput.value = hook; 
+            dom.bodyInput.value = body; 
+            dom.ctaInput.value = cta;
+
+            showView('editor');
+
+            const nextStepMessage = "The first draft is ready in the Editor.";
+            addMessageToChat({ role: 'model', text: nextStepMessage });
+            state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+            state.appMode = 'EDITING';
         } else {
-            console.error("Janitor failed to find valid JSON in the response:", rawText);
-            const recoveryMessage = "There was an error generating the script format. The AI might have responded with text instead. Please try asking for the angle again.";
+            console.error("Janitor function failed to find valid JSON in the response:", rawText);
+            const recoveryMessage = "There was an error generating the script format. Please try asking for the angle again.";
             addMessageToChat({ role: 'model', text: recoveryMessage });
         }
     }
@@ -176,10 +172,12 @@ function initializeApp() {
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
+
         addMessageToChat({ role: 'user', text: userMessageText });
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
         setUiLoading(true);
+
         try {
             const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "1", "2", "3"];
             const isChoosingAngle = angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t));
@@ -217,6 +215,7 @@ function initializeApp() {
         state.isAwaitingResponse = isLoading;
         if(dom.chatInput) dom.chatInput.disabled = isLoading;
         if(dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
+
         const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
         if (isLoading && !skeleton) {
             const skeletonDiv = document.createElement('div');
@@ -229,17 +228,19 @@ function initializeApp() {
     }
 
     function clearEditor() {
-        if(dom.hookInput) dom.hookInput.value = '';
-        if(dom.bodyInput) dom.bodyInput.value = '';
-        if(dom.ctaInput) dom.ctaInput.value = '';
+        if (dom.hookInput) dom.hookInput.value = '';
+        if (dom.bodyInput) dom.bodyInput.value = '';
+        if (dom.ctaInput) dom.ctaInput.value = '';
     }
     
-    function openModal(modalElement) { if (modalElement) modalElement.style.display = 'block'; }
-    function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
-    
-    // All other helper functions for modals, api keys etc. can be added here
-    // For now, let's just add the event listeners.
-    
+    function openModal(modalElement) {
+        if (modalElement) modalElement.style.display = 'block';
+    }
+
+    function closeModal(modalElement) {
+        if (modalElement) modalElement.style.display = 'none';
+    }
+
     function bindEventListeners() {
         if (dom.navEditorBtn) dom.navEditorBtn.addEventListener('click', () => showView('editor'));
         if (dom.navChatBtn) dom.navChatBtn.addEventListener('click', () => showView('chat'));
@@ -247,7 +248,9 @@ function initializeApp() {
         if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
         });
-        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => { if (confirm("Start a new script?")) { startNewScriptWorkflow(); } });
+        if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => {
+            if (confirm("Start a new script?")) { startNewScriptWorkflow(); }
+        });
         if (dom.saveScriptBtn) dom.saveScriptBtn.addEventListener('click', () => {
              const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
@@ -259,10 +262,17 @@ function initializeApp() {
         if (dom.settingsBtn) dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
         if (dom.myScriptsBtn) dom.myScriptsBtn.addEventListener('click', () => openModal(dom.scriptVaultModal));
         
-        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target);
+            }
+        });
         
         document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal');
+                if (modal) closeModal(modal);
+            });
         });
     }
 
@@ -270,8 +280,8 @@ function initializeApp() {
         bindEventListeners();
         startNewScriptWorkflow();
         updateNav();
-        // showWelcomeGuideIfNeeded(); // Re-enable this when ready
-        // updateApiStatus(!!getApiKey()); // Re-enable this when ready
+        // Additional initializations (API key status, welcome guide, etc.)
+        // would go here. For now, this is the core.
     }
 
     initialize();
