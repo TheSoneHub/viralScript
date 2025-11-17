@@ -132,3 +132,31 @@ function deleteScript(scriptId) {
         return false;
     }
 }
+
+// === 4. USER PROFILE STORAGE ===
+
+/**
+ * Saves the user's profile data to localStorage.
+ * @param {object} profileData - The profile object { brand, audience }.
+ */
+function saveUserProfile(profileData) {
+    try {
+        localStorage.setItem("viralscript_user_profile", JSON.stringify(profileData));
+    } catch (e) {
+        console.error("Failed to save user profile:", e);
+    }
+}
+
+/**
+ * Retrieves the user's profile data from localStorage.
+ * @returns {object|null} The profile object, or null if it doesn't exist.
+ */
+function getUserProfile() {
+    try {
+        const profileJson = localStorage.getItem("viralscript_user_profile");
+        return profileJson ? JSON.parse(profileJson) : null;
+    } catch (e) {
+        console.error("Failed to retrieve user profile:", e);
+        return null;
+    }
+}

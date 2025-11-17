@@ -363,7 +363,8 @@ function initializeApp() {
         });
     }
 
-    function bindEventListeners() {
+function bindEventListeners() {
+        // Chat functionality
         dom.sendChatBtn.addEventListener('click', handleSendMessage);
         dom.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) {
@@ -371,6 +372,8 @@ function initializeApp() {
                 handleSendMessage();
             }
         });
+
+        // Header controls
         dom.clearChatBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to clear the chat and start a new script?')) {
                 deleteChatHistory();
@@ -382,6 +385,33 @@ function initializeApp() {
                 startNewScriptWorkflow();
             }
         });
+
+        // Settings Modal & Profile Functionality
+        dom.settingsBtn.addEventListener('click', () => {
+            // Load existing profile data when modal is opened
+            const userProfile = getUserProfile();
+            const brandInfoEl = document.getElementById('profile-brand-info');
+            const audienceInfoEl = document.getElementById('profile-audience-info');
+
+            if (userProfile) {
+                if(brandInfoEl) brandInfoEl.value = userProfile.brand || '';
+                if(audienceInfoEl) audienceInfoEl.value = user.audience || '';
+            }
+            openModal(dom.settingsModal);
+        });
+
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        if (saveProfileBtn) {
+            saveProfileBtn.addEventListener('click', () => {
+                const brandInfo = document.getElementById('profile-brand-info').value.trim();
+                const audienceInfo = document.getElementById('profile-audience-info').value.trim();
+                saveUserProfile({ brand: brandInfo, audience: audienceInfo });
+                alert('Profile saved successfully!');
+                closeModal(dom.settingsModal);
+            });
+        }
+        
+        // API Key Functionality
         dom.saveApiKeyBtn.addEventListener('click', () => {
             const key = dom.apiKeyInput.value.trim();
             if (key) {
@@ -402,6 +432,8 @@ function initializeApp() {
                 alert('API Key deleted.');
             }
         });
+
+        // Script Editor Actions
         dom.saveScriptBtn.addEventListener('click', () => {
             const hook = dom.hookInput.value.trim();
             const body = dom.bodyInput.value.trim();
@@ -416,7 +448,8 @@ function initializeApp() {
                 alert(`Script '${title}' saved successfully!`);
             }
         });
-        dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
+
+        // All Modal Open/Close Buttons
         dom.closeModalBtn.addEventListener('click', () => closeModal(dom.settingsModal));
         dom.hookBankBtn.addEventListener('click', () => openModal(dom.hookBankModal));
         dom.closeHookModalBtn.addEventListener('click', () => closeModal(dom.hookBankModal));
@@ -427,6 +460,8 @@ function initializeApp() {
             openModal(dom.scriptVaultModal);
         });
         dom.closeVaultModalBtn.addEventListener('click', () => closeModal(dom.scriptVaultModal));
+        
+        // Global listener to close modals when clicking on the background
         window.addEventListener('click', (event) => {
             if (event.target.classList.contains('modal')) {
                 closeModal(event.target);

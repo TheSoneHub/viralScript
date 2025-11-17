@@ -99,26 +99,52 @@
 
     <!-- MODALS (The modal HTML can be copied from my previous messages, it has no errors) -->
     <!-- Settings Modal -->
+<!-- MODALS -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Settings</h2>
                 <span id="close-modal-btn" class="close-btn">&times;</span>
             </div>
-            <div id="api-key-entry-state">
-                <div class="api-key-wrapper">
-                    <label for="api-key-input">Google Gemini API Key</label>
-                    <input type="password" id="api-key-input" placeholder="Enter your API key here...">
-                    <button id="save-api-key-btn" class="header-action-btn" style="width: 100%;">Save Key</button>
+
+            <!-- New User Profile Section -->
+            <div class="settings-section">
+                <h3>Your Profile</h3>
+                <p class="modal-subtitle" style="margin-top: 0.25rem; margin-bottom: 1rem;">
+                    AI will use this information to personalize its suggestions to match your brand.
+                </p>
+                <div class="profile-field">
+                    <label for="profile-brand-info">My Brand is about...</label>
+                    <textarea id="profile-brand-info" rows="3" placeholder="e.g., Making complex marketing topics easy for beginners. My style is humorous and direct."></textarea>
                 </div>
-                <p class="notice">Your API key is stored securely in your browser's local storage and is never sent to our servers.</p>
+                <div class="profile-field">
+                    <label for="profile-audience-info">My Target Audience is...</label>
+                    <textarea id="profile-audience-info" rows="3" placeholder="e.g., Young entrepreneurs in Myanmar (20-30 years old) who want to grow their online business."></textarea>
+                </div>
+                <button id="save-profile-btn" class="header-action-btn" style="width: 100%; margin-top: 1rem;">Save Profile</button>
             </div>
-            <div id="api-key-manage-state" class="hidden">
-                 <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved and active.</p>
-                 <button id="delete-api-key-btn" class="header-action-btn secondary" style="width: 100%; background-color: var(--danger-color); color: white;">Delete API Key</button>
+            
+            <hr class="settings-divider">
+
+            <!-- API Key Section -->
+            <div class="settings-section">
+                <h3>API Key</h3>
+                <div id="api-key-entry-state">
+                    <div class="api-key-wrapper">
+                        <label for="api-key-input">Google Gemini API Key</label>
+                        <input type="password" id="api-key-input" placeholder="Enter your API key here...">
+                        <button id="save-api-key-btn" class="header-action-btn" style="width: 100%;">Save Key</button>
+                    </div>
+                </div>
+                <div id="api-key-manage-state" class="hidden">
+                     <p class="notice" style="text-align:center; margin-bottom: 1rem;">Your Gemini API Key is saved and active.</p>
+                     <button id="delete-api-key-btn" class="header-action-btn secondary" style="width: 100%; background-color: var(--danger-color); color: white;">Delete API Key</button>
+                </div>
             </div>
         </div>
     </div>
+    <!-- (Other modals remain the same) -->
 
     <!-- Hook Bank Modal -->
     <div id="hook-bank-modal" class="modal">

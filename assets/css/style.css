@@ -474,3 +474,31 @@ textarea:focus {
     .chat-history, .script-wrapper { padding: 1rem; }
     .modal-content { padding: 1.5rem; }
 }
+
+/* === Styles for Phase 3: User Profile in Settings === */
+.settings-section {
+    margin-bottom: 2rem;
+}
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+.settings-divider {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 2rem 0;
+}
+.profile-field {
+    margin-bottom: 1rem;
+}
+.profile-field label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+.profile-field textarea {
+    min-height: 80px;
+    font-family: var(--font-primary);
+    font-size: 0.95rem;
+}
