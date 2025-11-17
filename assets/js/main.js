@@ -42,13 +42,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
+    function setEnterButtonState(state) {
+        if (!enterAppBtn) return;
+        switch (state) {
+            case 'verifying': enterAppBtn.disabled = true; enterAppBtn.textContent = 'Verifying...'; break;
+            case 'entering': enterAppBtn.disabled = true; enterAppBtn.textContent = 'Entering...'; break;
+            case 'enter': enterAppBtn.disabled = false; enterAppBtn.textContent = 'Enter App'; break;
+            case 'continue': default: enterAppBtn.disabled = false; enterAppBtn.textContent = 'Continue'; break;
+        }
+    }
+
     async function handleEmailLogin() {
         if (!emailInput || !enterAppBtn || enterAppBtn.disabled) return;
         const email = emailInput.value;
         if (!email) return;
-        enterAppBtn.disabled = true;
-        enterAppBtn.textContent = 'Verifying...';
-        if(errorMessage) errorMessage.classList.add('hidden');
+        const storedEmail = localStorage.getItem('approvedUserEmail');
+        // Show a slightly different UX when the user is re-entering with a previously stored email
+        if (storedEmail && storedEmail.trim().toLowerCase() === email.trim().toLowerCase()) {
+            setEnterButtonState('entering');
+        } else {
+            setEnterButtonState('verifying');
+        }
+        if (errorMessage) errorMessage.classList.add('hidden');
         const isApproved = await validateEmail(email);
         if (isApproved) {
             localStorage.setItem('approvedUserEmail', email);
@@ -57,20 +72,23 @@ document.addEventListener('DOMContentLoaded', () => {
             emailInput.classList.add('shake');
             if (errorMessage) errorMessage.textContent = 'Access Denied.';
             setTimeout(() => emailInput.classList.remove('shake'), 820);
-            enterAppBtn.disabled = false;
-            enterAppBtn.textContent = 'Continue';
+            setEnterButtonState('continue');
         }
     }
 
     async function checkStoredSession() {
         const storedEmail = localStorage.getItem('approvedUserEmail');
         if (storedEmail) {
-            if(enterAppBtn) enterAppBtn.disabled = true;
+            // pre-fill input and give the user a hint they can enter the app
+            if (emailInput) emailInput.value = storedEmail;
+            setEnterButtonState('enter');
+            // verify in background to auto-enter if still valid
+            setEnterButtonState('verifying');
             const isStillApproved = await validateEmail(storedEmail);
-            if (isStillApproved) { grantAccessAndInitialize(); } 
+            if (isStillApproved) { grantAccessAndInitialize(); }
             else {
                 localStorage.removeItem('approvedUserEmail');
-                if(enterAppBtn) enterAppBtn.disabled = false;
+                setEnterButtonState('continue');
             }
         }
     }
@@ -78,6 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (enterAppBtn) {
         enterAppBtn.addEventListener('click', handleEmailLogin);
         emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleEmailLogin(); } });
+    }
+    // make sure button shows sensible default when the DOM is ready
+    const initialStored = localStorage.getItem('approvedUserEmail');
+    if (initialStored && initialStored.trim()) {
+        if (emailInput) emailInput.value = initialStored;
+        setEnterButtonState('enter');
+    } else {
+        setEnterButtonState('continue');
     }
     checkStoredSession();
 });
