@@ -1,7 +1,7 @@
 // /assets/js/main.js - Definitive, Complete Mobile-First Version
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ACCESS GATE LOGIC (Runs before the main app) ---
+    // --- 1. ACCESS GATE LOGIC ---
     const accessGate = document.getElementById('access-gate');
     const mobileAppWrapper = document.querySelector('.mobile-app-wrapper');
     const mobileNav = document.querySelector('.mobile-nav');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = `${EMAIL_VALIDATION_API_URL}?email=${encodeURIComponent(email.trim().toLowerCase())}`;
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response error');
+            if (!response.ok) throw new Error('Network error');
             const data = await response.json();
             return data.status === 'success';
         } catch (error) {
@@ -71,54 +71,43 @@ document.addEventListener('DOMContentLoaded', () => {
         enterAppBtn.addEventListener('click', handleEmailLogin);
         emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleEmailLogin(); } });
     }
-
     checkStoredSession();
 });
 
 // =================================================================
-// MAIN APP LOGIC - MOBILE-FIRST VERSION
+// MAIN APP LOGIC - MOBILE-FIRST
 // =================================================================
 function initializeApp() {
-    let state = {
-        currentView: 'chat',
-        isAwaitingResponse: false,
-        chatHistory: [],
-    };
-
+    let state = { currentView: 'chat', isAwaitingResponse: false, chatHistory: [] };
     const dom = {
-        // Views & Nav
         editorView: document.getElementById('editor-view'),
         chatView: document.getElementById('chat-view'),
         navEditorBtn: document.getElementById('nav-editor-btn'),
         navChatBtn: document.getElementById('nav-chat-btn'),
-        // Editor
         hookInput: document.getElementById('hook-input'),
         bodyInput: document.getElementById('body-input'),
         ctaInput: document.getElementById('cta-input'),
         newScriptBtn: document.getElementById('new-script-btn'),
         saveScriptBtn: document.getElementById('save-script-btn'),
         copyScriptBtn: document.getElementById('copy-script-btn'),
-        // Chat
         chatHistoryEl: document.getElementById('ai-chat-history'),
         chatInput: document.getElementById('chat-input'),
         sendChatBtn: document.getElementById('send-chat-btn'),
-        // Shared Header Controls
         settingsBtn: document.getElementById('settings-btn'),
         myScriptsBtn: document.getElementById('my-scripts-btn'),
         apiStatusLight: document.getElementById('api-status'),
-        // Modals (assuming they are in the HTML)
         settingsModal: document.getElementById('settings-modal'),
         scriptVaultModal: document.getElementById('script-vault-modal'),
         hookBankModal: document.getElementById('hook-bank-modal'),
         ctaBankModal: document.getElementById('cta-bank-modal'),
         welcomeModal: document.getElementById('welcome-modal'),
+        scriptVaultList: document.getElementById('script-vault-list'),
     };
 
     function showView(viewName) {
         if (state.currentView === viewName && window.innerWidth < 1024) return;
         state.currentView = viewName;
-
-        if (window.innerWidth < 1024) { // Only perform swaps on mobile
+        if (window.innerWidth < 1024) {
             if (viewName === 'editor') {
                 dom.editorView.classList.remove('hidden');
                 dom.chatView.classList.add('hidden');
@@ -131,13 +120,8 @@ function initializeApp() {
     }
 
     function updateNav() {
-        if (state.currentView === 'editor') {
-            dom.navEditorBtn.classList.add('active');
-            dom.navChatBtn.classList.remove('active');
-        } else {
-            dom.navChatBtn.classList.add('active');
-            dom.navEditorBtn.classList.remove('active');
-        }
+        dom.navEditorBtn.classList.toggle('active', state.currentView === 'editor');
+        dom.navChatBtn.classList.toggle('active', state.currentView === 'chat');
     }
 
     function startNewScriptWorkflow() {
@@ -223,63 +207,38 @@ function initializeApp() {
         dom.ctaInput.value = '';
     }
     
-    function openModal(modalElement) {
-        if (modalElement) modalElement.style.display = 'block';
-    }
-
-    function closeModal(modalElement) {
-        if (modalElement) modalElement.style.display = 'none';
-    }
+    function openModal(modalElement) { if (modalElement) modalElement.style.display = 'block'; }
+    function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
 
     function bindEventListeners() {
-        // Navigation
         dom.navEditorBtn.addEventListener('click', () => showView('editor'));
         dom.navChatBtn.addEventListener('click', () => showView('chat'));
-
-        // Chat
         dom.sendChatBtn.addEventListener('click', handleSendMessage);
         dom.chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !state.isAwaitingResponse) {
-                e.preventDefault();
-                handleSendMessage();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
         });
-
-        // Editor actions
         dom.newScriptBtn.addEventListener('click', () => {
-            if (confirm("Start a new script? Unsaved changes will be lost.")) {
-                startNewScriptWorkflow();
-            }
+            if (confirm("Start a new script?")) { startNewScriptWorkflow(); }
         });
         dom.saveScriptBtn.addEventListener('click', () => {
-             const title = prompt("Script Title:", "Untitled Script");
+             const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
         });
         dom.copyScriptBtn.addEventListener('click', () => {
             const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-            navigator.clipboard.writeText(fullScript).then(() => {
-                alert("Script copied to clipboard!");
-            });
+            navigator.clipboard.writeText(fullScript).then(() => alert("Script copied!"));
         });
-
-        // Header controls (shared)
         dom.settingsBtn.addEventListener('click', () => openModal(dom.settingsModal));
-        dom.myScriptsBtn.addEventListener('click', () => openModal(dom.scriptVaultModal));
-        
-        // Modal specific listeners
-        // This assumes you add 'data-modal-close' to all close buttons in your HTML
-        document.querySelectorAll('[data-modal-close]').forEach(button => {
-            button.addEventListener('click', () => {
-                const modal = button.closest('.modal');
-                if (modal) closeModal(modal);
-            });
+        dom.myScriptsBtn.addEventListener('click', () => {
+            // You'll need to re-add renderScriptVault() logic if you use it
+            openModal(dom.scriptVaultModal);
         });
-
-        // Fallback for global click
         window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) {
-                closeModal(event.target);
-            }
+            if (event.target.classList.contains('modal')) { closeModal(event.target); }
+        });
+        // Add listeners for all close buttons inside modals
+        document.querySelectorAll('.close-btn').forEach(btn => {
+            btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
         });
     }
 
