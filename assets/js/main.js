@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive Version with Final Parsing Fix
+// /assets/js/main.js - Definitive Version with Universal JSON Parser
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -195,25 +195,29 @@ function initializeApp() {
             const scenes = scriptJSON.scenes;
             let hook = '', body = '', cta = '';
 
-            const getSceneText = (scene) => {
+            const getUniversalSceneText = (scene) => {
                 if (!scene) return '';
-                return scene.script_burmese || scene.dialogue_burmese || '';
+                if (typeof scene.script_burmese === 'string') return scene.script_burmese;
+                if (typeof scene.dialogue_burmese === 'string') return scene.dialogue_burmese;
+                if (Array.isArray(scene.dialogue)) {
+                    return scene.dialogue.map(item => item.line || '').join(' ').trim();
+                }
+                return '';
             };
 
             if (scenes.length === 1) {
-                hook = getSceneText(scenes[0]);
+                hook = getUniversalSceneText(scenes[0]);
             } else if (scenes.length === 2) {
-                hook = getSceneText(scenes[0]);
-                cta = getSceneText(scenes[1]); // A 2-scene script is a Hook and a CTA
+                hook = getUniversalSceneText(scenes[0]);
+                cta = getUniversalSceneText(scenes[1]);
             } else { // 3 or more scenes
-                hook = getSceneText(scenes[0]);
-                cta = getSceneText(scenes[scenes.length - 1]);
-                body = scenes.slice(1, -1).map(getSceneText).join('\n\n').trim();
+                hook = getUniversalSceneText(scenes[0]);
+                cta = getUniversalSceneText(scenes[scenes.length - 1]);
+                body = scenes.slice(1, -1).map(getUniversalSceneText).join('\n\n').trim();
             }
 
-            // Final check to ensure we extracted something
             if (!hook && !body && !cta) {
-                throw new Error("Failed to extract any text from the scenes.");
+                throw new Error("Failed to extract any text from any known key in the scenes.");
             }
 
             dom.hookInput.value = hook;
