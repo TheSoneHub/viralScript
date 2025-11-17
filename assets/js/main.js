@@ -1,4 +1,4 @@
-// /assets/js/main.js - Definitive Version with Welcome Screen Fix
+// /assets/js/main.js - Definitive Version with Universal JSON Parser
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -119,19 +119,6 @@ function initializeApp() {
         closeWelcomeBtn: document.getElementById('close-welcome-btn'),
     };
 
-    function showWelcomeGuideIfNeeded() {
-        if (!hasSeenWelcomeGuide() && dom.welcomeModal) {
-            openModal(dom.welcomeModal);
-            // Attach the listener here directly to ensure it works
-            if (dom.closeWelcomeBtn) {
-                dom.closeWelcomeBtn.addEventListener('click', () => {
-                    closeModal(dom.welcomeModal);
-                    setWelcomeGuideSeen();
-                }, { once: true }); // { once: true } is a safety measure
-            }
-        }
-    }
-
     function showView(viewName) {
         state.currentView = viewName;
         if (window.innerWidth < 1024) {
@@ -145,6 +132,12 @@ function initializeApp() {
         if (dom.navEditorBtn && dom.navChatBtn) {
             dom.navEditorBtn.classList.toggle('active', state.currentView === 'editor');
             dom.navChatBtn.classList.toggle('active', state.currentView === 'chat');
+        }
+    }
+
+    function showWelcomeGuideIfNeeded() {
+        if (!hasSeenWelcomeGuide() && dom.welcomeModal) {
+            openModal(dom.welcomeModal);
         }
     }
 
@@ -198,32 +191,46 @@ function initializeApp() {
             if (!scriptJSON || !scriptJSON.scenes || !Array.isArray(scriptJSON.scenes) || scriptJSON.scenes.length === 0) {
                 throw new Error("Invalid or empty scenes array in JSON.");
             }
+
             const scenes = scriptJSON.scenes;
             let hook = '', body = '', cta = '';
+
             const getUniversalSceneText = (scene) => {
                 if (!scene) return '';
                 if (typeof scene.script_burmese === 'string') return scene.script_burmese;
                 if (typeof scene.dialogue_burmese === 'string') return scene.dialogue_burmese;
-                if (Array.isArray(scene.dialogue)) { return scene.dialogue.map(item => item.line || '').join(' ').trim(); }
+                if (Array.isArray(scene.dialogue)) {
+                    return scene.dialogue.map(item => item.line || '').join(' ').trim();
+                }
                 return '';
             };
+
             if (scenes.length === 1) {
                 hook = getUniversalSceneText(scenes[0]);
             } else if (scenes.length === 2) {
                 hook = getUniversalSceneText(scenes[0]);
                 cta = getUniversalSceneText(scenes[1]);
-            } else {
+            } else { // 3 or more scenes
                 hook = getUniversalSceneText(scenes[0]);
                 cta = getUniversalSceneText(scenes[scenes.length - 1]);
                 body = scenes.slice(1, -1).map(getUniversalSceneText).join('\n\n').trim();
             }
-            if (!hook && !body && !cta) { throw new Error("Failed to extract any text from any known key in the scenes."); }
-            dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
+
+            if (!hook && !body && !cta) {
+                throw new Error("Failed to extract any text from any known key in the scenes.");
+            }
+
+            dom.hookInput.value = hook;
+            dom.bodyInput.value = body;
+            dom.ctaInput.value = cta;
+            
             showView('editor');
+            
             const nextStepMessage = "The first draft is ready in the Editor.";
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
+
         } catch (error) {
             console.error("Error in processAndFillScript:", error);
             const recoveryMessage = "It seems there was an error processing the script format. Please try asking again.";
@@ -264,7 +271,10 @@ function initializeApp() {
     function openModal(modalElement) { if (modalElement) modalElement.style.display = 'block'; }
     function closeModal(modalElement) { if (modalElement) modalElement.style.display = 'none'; }
 
-    function updateApiStatus(isKeySet) { if (dom.apiStatusLight) { dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red'; } }
+    function updateApiStatus(isKeySet) {
+        if (dom.apiStatusLight) { dom.apiStatusLight.className = isKeySet ? 'status-light-green' : 'status-light-red'; }
+    }
+
     function updateApiKeySettingsUI(isKeySet) {
         if (dom.apiKeyEntryState && dom.apiKeyManageState) {
             dom.apiKeyEntryState.classList.toggle('hidden', isKeySet);
@@ -276,7 +286,10 @@ function initializeApp() {
         if (!dom.scriptVaultList) return;
         const scripts = getSavedScripts();
         dom.scriptVaultList.innerHTML = '';
-        if (scripts.length === 0) { dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>'; return; }
+        if (scripts.length === 0) {
+            dom.scriptVaultList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No saved scripts yet.</p>';
+            return;
+        }
         scripts.forEach(script => {
             const item = document.createElement('div');
             item.className = 'vault-item';
@@ -289,7 +302,9 @@ function initializeApp() {
         if (dom.navEditorBtn) dom.navEditorBtn.addEventListener('click', () => showView('editor'));
         if (dom.navChatBtn) dom.navChatBtn.addEventListener('click', () => showView('chat'));
         if (dom.sendChatBtn) dom.sendChatBtn.addEventListener('click', handleSendMessage);
-        if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
+        if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+        });
         if (dom.newScriptBtn) dom.newScriptBtn.addEventListener('click', () => { if (confirm("Start a new script?")) { startNewScriptWorkflow(); } });
         if (dom.saveScriptBtn) dom.saveScriptBtn.addEventListener('click', () => {
              const title = prompt("Script Title:");
@@ -326,7 +341,7 @@ function initializeApp() {
             });
         }
         document.querySelectorAll('.close-btn').forEach(btn => { btn.addEventListener('click', () => closeModal(btn.closest('.modal'))); });
-        // The specific listener for the welcome button is now handled inside showWelcomeGuideIfNeeded
+        if (dom.closeWelcomeBtn) dom.closeWelcomeBtn.addEventListener('click', () => { closeModal(dom.welcomeModal); setWelcomeGuideSeen(); });
         window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) { closeModal(event.target); } });
     }
 
@@ -360,7 +375,7 @@ function initializeApp() {
         initializeHookBank();
         startNewScriptWorkflow();
         updateNav();
-        showWelcomeGuideIfNeeded(); // This is the final call, now with robust logic
+        showWelcomeGuideIfNeeded();
     }
 
     initialize();
