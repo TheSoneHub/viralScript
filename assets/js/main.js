@@ -207,67 +207,88 @@ async function handleSendMessage() {
         setUiLoading(true);
         
         try {
-            // Simply get the next response from the AI
-            const aiResponseText = await generateChatResponse(state.chatHistory);
+            const angleChoiceTriggers = ["angle", "နံပါတ်", "number", "1", "2", "3"];
+            const isChoosingAngle = angleChoiceTriggers.some(t => userMessageText.toLowerCase().includes(t));
 
-            if (aiResponseText) {
-                // --- NEW SIGNAL-BASED LOGIC ---
-                if (aiResponseText.includes('[SCRIPT_GENERATED]')) {
-                    // The AI has signaled that a script was just generated.
-                    // Now we process it.
-                    await processGeneratedScript();
-                } else {
-                    // It's a normal message, so display it.
+            if (isChoosingAngle) {
+                // Intercept the angle choice and send a hidden, more direct command
+                const hiddenPrompt = `The user chose an angle. Now, execute Phase 2: SCRIPT PRODUCTION. Respond with the JSON object for the script.`;
+                const tempHistory = [...state.chatHistory, { role: 'user', parts: [{ text: hiddenPrompt }] }];
+                
+                // Get the raw response, which might be messy
+                const rawAiResponse = await generateChatResponse(tempHistory);
+
+                // Use the Janitor to clean it up
+                processAndFillScript(rawAiResponse);
+
+            } else {
+                // For all other conversation, proceed normally
+                const aiResponseText = await generateChatResponse(state.chatHistory);
+                if (aiResponseText) {
                     addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
             }
         } catch (error) {
             console.error("Critical Error in handleSendMessage:", error);
-            // ... (error handling remains the same) ...
+            addMessageToChat({ role: 'model', text: `**Error:** An unexpected error occurred.` });
         } finally {
             setUiLoading(false);
         }
     }
 
-    // RENAMED from generateFinalScript to processGeneratedScript for clarity
-async function processGeneratedScript() {
-        if (state.chatHistory.length < 1) return;
+    // Renamed for clarity and purpose
+    function processAndFillScript(rawText) {
+        // Use the JANITOR function to find the JSON
+        const scriptJSON = extractJSON(rawText);
 
-        // Find the last message from the model.
-        const lastModelResponse = [...state.chatHistory].reverse().find(m => m.role === 'model');
-        if (!lastModelResponse) {
-            throw new Error("Could not find the AI's response in history.");
-        }
-
-        const responseText = lastModelResponse.parts[0].text;
-
-        try {
-            // Check if the response is actually JSON before trying to parse
-            if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
-                const scriptJSON = JSON.parse(responseText);
-                // ... (the rest of the successful JSON parsing logic is the same)
-                if (scriptJSON && scriptJSON.scenes) {
-                    const scenes = scriptJSON.scenes;
-                    const hook = scenes[0]?.script_burmese || '';
-                    const cta = scenes[scenes.length - 1]?.script_burmese || '';
-                    const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
-                    dom.hookInput.value = hook; dom.bodyInput.value = body; dom.ctaInput.value = cta;
-                    showView('editor');
-                    const nextStepMessage = "The first draft is ready in the Editor.";
-                    addMessageToChat({ role: 'model', text: nextStepMessage });
-                    state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-                    state.appMode = 'EDITING';
-                } else { throw new Error("Parsed JSON is not in the expected format."); }
-            } else {
-                // The AI did not return JSON. It sent a normal message.
-                throw new Error("AI failed to return JSON. Response was: " + responseText);
-            }
-        } catch(error) {
-            console.error("Error processing generated script:", error);
-            const recoveryMessage = "It seems there was an error generating the script in the correct format. Please try asking for the angle again, for example: 'Let's go with angle 2 again.'";
+        if (scriptJSON && scriptJSON.scenes) {
+            // Success! We found the JSON.
+            const scenes = scriptJSON.scenes;
+            const hook = scenes[0]?.script_burmese || '';
+            const cta = scenes[scenes.length - 1]?.script_burmese || '';
+            const body = scenes.slice(1, -1).map(s => s.script_burmese).join('\n\n').trim();
+            
+            dom.hookInput.value = hook;
+            dom.bodyInput.value = body;
+            dom.ctaInput.value = cta;
+            
+            showView('editor'); // Switch to the editor
+            
+            // Add a clean final message to the chat
+            const nextStepMessage = "The first draft is ready in the Editor. You can ask me for revisions now.";
+            addMessageToChat({ role: 'model', text: nextStepMessage });
+            state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+            
+            state.appMode = 'EDITING';
+        } else {
+            // Failure: No valid JSON was found in the AI's response.
+            console.error("Janitor failed to find valid JSON in the response:", rawText);
+            const recoveryMessage = "It seems there was an error generating the script format. The AI might have responded with text instead of a script. Please try asking again, for example: 'Let's use angle 2.'";
             addMessageToChat({ role: 'model', text: recoveryMessage });
-            // Don't change the app mode, allow the user to try again.
+        }
+    }
+
+    /**
+     * A robust function to find and extract a JSON block from a string.
+     * @param {string} text - The text from the AI, which might contain extra words.
+     * @returns {object|null} A parsed JSON object, or null if no valid JSON is found.
+     */
+    function extractJSON(text) {
+        const startIndex = text.indexOf('{');
+        const endIndex = text.lastIndexOf('}');
+        
+        if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+            return null; // No JSON object found
+        }
+        
+        const jsonString = text.substring(startIndex, endIndex + 1);
+        
+        try {
+            return JSON.parse(jsonString);
+        } catch (error) {
+            console.error("Failed to parse extracted JSON:", error);
+            return null; // The extracted string was not valid JSON
         }
     }
 
