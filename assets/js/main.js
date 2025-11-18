@@ -1,4 +1,5 @@
 // /assets/js/main.js - Definitive Version with Universal JSON Parser
+import { extractJSON, parseScriptJSON } from './modules/parser.js';
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -177,39 +178,7 @@ function initializeApp() {
         showView('chat');
     }
     
-    function extractJSON(text) {
-        if (!text || typeof text !== 'string') return null;
-        let candidate = text.trim();
-        // Decode HTML and strip tags (handles <pre><code> wrappers or escaped entities)
-        try {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = candidate;
-            candidate = (tmp.textContent || tmp.innerText || candidate).trim();
-        } catch (e) {
-            // ignore DOM parsing errors and continue with original text
-        }
-        // Remove zero-width and non-printing characters that sometimes wrap model output
-        candidate = candidate.replace(/\u200B|\uFEFF/g, '').trim();
-        // If JSON is inside triple backticks (```json or ```), extract inner content
-        const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-        if (fenceMatch && fenceMatch[1]) candidate = fenceMatch[1].trim();
-        // Remove any surrounding inline code backticks
-        candidate = candidate.replace(/^`|`$/g, '').trim();
-        const startIndex = candidate.indexOf('{');
-        const endIndex = candidate.lastIndexOf('}');
-        if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
-        let jsonString = candidate.substring(startIndex, endIndex + 1);
-        try { return JSON.parse(jsonString); }
-        catch (error) {
-            // Try a relaxed parse: decode HTML entities already done; attempt to fix common issues
-            try {
-                const relaxed = jsonString.replace(/\n/g, ' ').replace(/\t/g, ' ').replace(/'/g, '"');
-                return JSON.parse(relaxed);
-            } catch (e) {
-                return null;
-            }
-        }
-    }
+    // extractJSON is now provided by ./modules/parser.js
 
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
@@ -223,7 +192,21 @@ function initializeApp() {
             if (aiResponseText) {
                 const scriptJSON = extractJSON(aiResponseText);
                 if (scriptJSON) {
-                    processAndFillScript(scriptJSON);
+                    // parse script JSON into editor fields
+                    const parsed = parseScriptJSON(scriptJSON);
+                    if (parsed) {
+                        dom.hookInput.value = parsed.hook || '';
+                        dom.bodyInput.value = parsed.body || '';
+                        dom.ctaInput.value = parsed.cta || '';
+                        showView('editor');
+                        const nextStepMessage = 'Draft ready — opening Editor.';
+                        addMessageToChat({ role: 'model', text: nextStepMessage });
+                        state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+                        state.appMode = 'EDITING';
+                    } else {
+                        addMessageToChat({ role: 'model', text: 'Could not parse script object.' });
+                        state.chatHistory.push({ role: 'model', parts: [{ text: 'Could not parse script object.' }] });
+                    }
                 } else {
                     addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
@@ -237,57 +220,7 @@ function initializeApp() {
         }
     }
 
-    function processAndFillScript(scriptJSON) {
-        try {
-            if (!scriptJSON || !scriptJSON.scenes || !Array.isArray(scriptJSON.scenes) || scriptJSON.scenes.length === 0) {
-                throw new Error("Invalid or empty scenes array in JSON.");
-            }
-
-            const scenes = scriptJSON.scenes;
-            let hook = '', body = '', cta = '';
-
-            const getUniversalSceneText = (scene) => {
-                if (!scene) return '';
-                if (typeof scene.script_burmese === 'string') return scene.script_burmese;
-                if (typeof scene.dialogue_burmese === 'string') return scene.dialogue_burmese;
-                if (Array.isArray(scene.dialogue)) {
-                    return scene.dialogue.map(item => item.line || '').join(' ').trim();
-                }
-                return '';
-            };
-
-            if (scenes.length === 1) {
-                hook = getUniversalSceneText(scenes[0]);
-            } else if (scenes.length === 2) {
-                hook = getUniversalSceneText(scenes[0]);
-                cta = getUniversalSceneText(scenes[1]);
-            } else { // 3 or more scenes
-                hook = getUniversalSceneText(scenes[0]);
-                cta = getUniversalSceneText(scenes[scenes.length - 1]);
-                body = scenes.slice(1, -1).map(getUniversalSceneText).join('\n\n').trim();
-            }
-
-            if (!hook && !body && !cta) {
-                throw new Error("Failed to extract any text from any known key in the scenes.");
-            }
-
-            dom.hookInput.value = hook;
-            dom.bodyInput.value = body;
-            dom.ctaInput.value = cta;
-            
-            showView('editor');
-            
-            const nextStepMessage = "The first draft is ready in the Editor.";
-            addMessageToChat({ role: 'model', text: nextStepMessage });
-            state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-            state.appMode = 'EDITING';
-
-        } catch (error) {
-            console.error("Error in processAndFillScript:", error);
-            const recoveryMessage = "It seems there was an error processing the script format. Please try asking again.";
-            addMessageToChat({ role: 'model', text: recoveryMessage });
-        }
-    }
+    // script parsing and filling moved to parser module; handled inline where responses arrive
 
     function addMessageToChat({ role, text }) {
         if (!dom.chatHistoryEl) return;
