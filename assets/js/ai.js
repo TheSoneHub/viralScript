@@ -13,35 +13,29 @@ const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/ge
 // ... (API_ENDPOINT remains the same) ...
 
 async function fetchFromApi(requestBody, signal) {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        throw new Error("API_KEY_MISSING");
-    }
+    // Proxy call to server-side endpoint. Server holds the real API key.
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+            signal,
+        });
 
-    const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        signal: signal,
-    });
-
-    if (!response.ok) {
-        // Specifically check for invalid API key error from Google
-        if (response.status === 400) {
-            const errorData = await response.json();
-            if (errorData.error?.message.includes('API key not valid')) {
-                throw new Error("API_KEY_INVALID");
-            }
+        if (!response.ok) {
+            const errText = await response.text().catch(() => '');
+            throw new Error(`Proxy API Error: ${response.status} ${response.statusText} ${errText}`);
         }
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
 
-    const data = await response.json();
-    if (!data.candidates || data.candidates.length === 0) {
-        throw new Error("AI response was blocked or empty. This might be due to safety settings.");
+        const data = await response.json();
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("AI response was blocked or empty. This might be due to safety settings.");
+        }
+        return data;
+    } catch (e) {
+        // Bubble up
+        throw e;
     }
-    
-    return data;
 }
 // ... (the rest of ai.js remains the same) ...
 

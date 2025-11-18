@@ -70,3 +70,39 @@ Your application is now fully configured and ready to use!
 2.  **Choose Your Angle:** The AI will propose 3 creative angles. Reply with your choice (e.g., "use angle 2").
 3.  **Receive Your Script:** The complete script will be automatically generated and placed into the Editor.
 4.  **Refine and Edit:** You can now edit the script directly in the editor or have a conversation with the AI to make revisions (e.g., "make the hook shorter" or "suggest a different CTA").
+
+## Local development, proxy server & tests (added)
+
+This repository includes a small local proxy server and unit tests to make development safer and easier.
+
+### Run unit tests
+
+1. Install dependencies (Node.js 18+):
+
+```powershell
+npm install
+```
+
+2. Run tests:
+
+```powershell
+npm test
+```
+
+### Start the local proxy & static site
+
+The project includes `server.js` — a minimal Express server that serves the static files and proxies AI requests to Google Gemini.
+
+Set your Gemini API key into the environment and start the server (PowerShell example):
+
+```powershell
+$env:GEN_API_KEY = 'YOUR_GOOGLE_GEN_API_KEY_HERE'; npm run start-server
+```
+
+Visit `http://localhost:3000`.
+
+### Notes
+- The server reads `GEN_API_KEY` from the environment. Do NOT commit your key to source control.
+- CI is configured in `.github/workflows/ci.yml` to run tests on pushes and PRs to `main`.
+
+If you want me to harden the proxy for production (add `helmet`, `express-rate-limit`, and a Dockerfile), I can add those next.

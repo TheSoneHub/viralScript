@@ -1,5 +1,6 @@
 // /assets/js/main.js - Definitive Version with Universal JSON Parser
 import { extractJSON, parseScriptJSON } from './modules/parser.js';
+import { addMessageToChat, setUiLoading } from './modules/ui.js';
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -173,7 +174,7 @@ function initializeApp() {
         if (dom.chatHistoryEl) dom.chatHistoryEl.innerHTML = '';
         clearEditor();
         const firstQuestion = "Welcome! What is the topic for your new script?";
-        addMessageToChat({ role: 'model', text: firstQuestion });
+        addMessageToChat(dom, { role: 'model', text: firstQuestion });
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
         showView('chat');
     }
@@ -183,10 +184,10 @@ function initializeApp() {
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
-        addMessageToChat({ role: 'user', text: userMessageText });
+        addMessageToChat(dom, { role: 'user', text: userMessageText });
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
-        setUiLoading(true);
+        setUiLoading(state, dom, true);
         try {
             const aiResponseText = await generateChatResponse(state.chatHistory);
             if (aiResponseText) {
@@ -200,51 +201,29 @@ function initializeApp() {
                         dom.ctaInput.value = parsed.cta || '';
                         showView('editor');
                         const nextStepMessage = 'Draft ready — opening Editor.';
-                        addMessageToChat({ role: 'model', text: nextStepMessage });
+                        addMessageToChat(dom, { role: 'model', text: nextStepMessage });
                         state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
                         state.appMode = 'EDITING';
                     } else {
-                        addMessageToChat({ role: 'model', text: 'Could not parse script object.' });
+                        addMessageToChat(dom, { role: 'model', text: 'Could not parse script object.' });
                         state.chatHistory.push({ role: 'model', parts: [{ text: 'Could not parse script object.' }] });
                     }
                 } else {
-                    addMessageToChat({ role: 'model', text: aiResponseText });
+                    addMessageToChat(dom, { role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
             }
         } catch (error) {
             console.error("Critical Error in handleSendMessage:", error);
-            addMessageToChat({ role: 'model', text: `**Error:** An unexpected error occurred.` });
+            addMessageToChat(dom, { role: 'model', text: `**Error:** An unexpected error occurred.` });
         } finally {
-            setUiLoading(false);
+            setUiLoading(state, dom, false);
         }
     }
 
     // script parsing and filling moved to parser module; handled inline where responses arrive
 
-    function addMessageToChat({ role, text }) {
-        if (!dom.chatHistoryEl) return;
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
-        messageDiv.innerHTML = marked.parse(text || '');
-        dom.chatHistoryEl.appendChild(messageDiv);
-        dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
-    }
-
-    function setUiLoading(isLoading) {
-        state.isAwaitingResponse = isLoading;
-        if(dom.chatInput) dom.chatInput.disabled = isLoading;
-        if(dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
-        const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
-        if (isLoading && !skeleton) {
-            const skeletonDiv = document.createElement('div');
-            skeletonDiv.className = 'chat-message skeleton-message';
-            skeletonDiv.innerHTML = `<div class="skeleton-line"></div>`;
-            dom.chatHistoryEl.appendChild(skeletonDiv);
-        } else if (!isLoading && skeleton) {
-            skeleton.remove();
-        }
-    }
+    // UI helpers for messaging and loading live in ./modules/ui.js (imported at top)
 
     function clearEditor() {
         if(dom.hookInput) dom.hookInput.value = '';
