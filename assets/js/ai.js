@@ -65,81 +65,9 @@ async function fetchFromApi(requestBody, signal) {
  * v8: Uses the strictest possible command structure to force JSON compliance.
  * @returns {object} A Gemini-formatted instruction object.
  */
-async function loadInspiration() {
-    // Load hooks and cta banks (cached per page load)
-    if (window.__viral_inspiration) return window.__viral_inspiration;
-    const insp = { hooks: [], ctas: [] };
-    try {
-        // Try multiple paths because the app might be opened via file://, hosted at a subpath,
-        // or served from the site root. getJsonWithFallback will attempt several variants.
-        const getJsonWithFallback = async (fileName) => {
-            const attempts = [fileName, `./${fileName}`, `/${fileName}`];
-            // base directory of current document (e.g. /some/path/)
-            try {
-                const baseDir = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
-                attempts.push(baseDir + fileName);
-            } catch (e) {
-                // ignore
-            }
-            for (const p of attempts) {
-                try {
-                    const res = await fetch(p);
-                    if (!res.ok) continue;
-                    const json = await res.json();
-                    return json;
-                } catch (e) {
-                    // try next
-                }
-            }
-            throw new Error(`Could not fetch ${fileName} from any known path`);
-        };
-
-        const [hRes, cRes] = await Promise.all([
-            getJsonWithFallback('hooks.json').catch(() => []),
-            getJsonWithFallback('cta_bank.json').catch(() => [])
-        ]);
-        // flatten a few examples
-        if (Array.isArray(hRes)) {
-            hRes.forEach(cat => { if (cat.hooks && Array.isArray(cat.hooks)) insp.hooks.push(...cat.hooks); });
-        }
-        if (Array.isArray(cRes)) {
-            cRes.forEach(cat => { if (cat.ctas && Array.isArray(cat.ctas)) insp.ctas.push(...cat.ctas); });
-        }
-    } catch (e) {
-        console.warn('Could not load inspiration banks:', e);
-    }
-    window.__viral_inspiration = insp;
-    return insp;
-}
-
-async function getSystemInstruction() {
-    const userProfile = getUserProfile();
-    const insp = await loadInspiration();
-    let personalizationLayer = "";
-    if (userProfile && (userProfile.brand || userProfile.audience)) {
-        personalizationLayer = `\n---\n**USER PROFILE FOR PERSONALIZATION:**\n- Brand Identity: "${userProfile.brand || 'Not provided'}"\n- Target Audience: "${userProfile.audience || 'Not provided'}"\n---\n`;
-    }
-
-    // pick a few short examples to embed as inspiration (up to 3 hooks and 3 ctas)
-    const sampleHooks = (insp.hooks || []).slice(0, 3).map(h => `- ${h}`).join('\n') || '- [No hook samples available]';
-    const sampleCtas = (insp.ctas || []).slice(0, 3).map(c => `- ${c}`).join('\n') || '- [No CTA samples available]';
-
-    const instructionText = `You are a professional AI scriptwriter specialized in fast, high-conversion short-video scripts. Use the user's profile and the inspiration samples to craft strong Hook -> Body -> CTA flow. ${personalizationLayer}\nINSPIRATION (use these as style/angle prompts but DO NOT copy verbatim):\nHOOK SAMPLES:\n${sampleHooks}\nCTA SAMPLES:\n${sampleCtas}\n\nWORKFLOW & PHASES:\n1) ANGLE PROPOSAL: If the user's last message is a new topic, propose THREE distinct creative angles in Burmese, each one short (1-2 lines). End with the question: "ဒီ Angle ၃ မျိုးထဲက ဘယ်တစ်ခုကို အခြေခံပြီး Script အပြည့်အစုံ ရေးပေးရမလဲ?" and wait.\n2) SCRIPT PRODUCTION: If the user selects an angle, produce the complete script as a single RAW JSON object ONLY (no surrounding text or backticks). The JSON must include \`title\`, \`estimated_duration\`, \`tone\`, and \`scenes\` array with at least 3 scenes (Hook, Body, CTA). Use Burmese for scene text values. Ensure Hook, Body and CTA flow logically and reflect the inspiration.\n3) EDITING MODE: If the history already contains a valid JSON script from you, switch to editing mode: respond in natural Burmese, do NOT output JSON, and follow user revision instructions.\n\nAlways prefer short, punchy Hooks and clear CTAs that match the tone requested. Do not output any extra commentary.`;
-
-    return { role: 'user', parts: [{ text: instructionText }] };
-}
-
-/**
- * Handles the general "Discovery Mode" conversation.
- * @param {Array<object>} history - The full chat history.
- * @param {AbortSignal} signal - The AbortSignal for the request.
- * @returns {Promise<string>} The AI's next question or a special token.
- */
 async function generateChatResponse(history, signal) {
     const systemInstruction = await getSystemInstruction();
-    const requestBody = {
-        contents: [systemInstruction, ...history]
-    };
+    const requestBody = { contents: [systemInstruction, ...history] };
 
     try {
         const data = await fetchFromApi(requestBody, signal);
@@ -150,7 +78,7 @@ async function generateChatResponse(history, signal) {
             return 'Generation stopped.';
         }
         if (error.message === "API_KEY_MISSING") {
-             return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
+            return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
         }
         // For unexpected errors, rethrow so the UI can surface detailed info to the user
         console.error("Failed to generate chat response:", error);
@@ -158,67 +86,69 @@ async function generateChatResponse(history, signal) {
     }
 }
 
-// /assets/js/ai.js
-
-// ... (Other functions remain the same) ...
-
 /**
- * Generates the script draft, now with a stronger emphasis on cohesion.
- * @param {Array<object>} history - The full chat history.
- * @param {AbortSignal} signal - The AbortSignal for the request.
- * @returns {Promise<object|null>} A parsed JSON object of the script or null if failed.
+ * Generates the script draft (clean, strict JSON output). Returns parsed object or null.
  */
 async function generateScriptFromHistory(history, signal) {
-    const conversationSummary = history
-        .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.parts[0].text}`)
-        .join('\n');
+        const conversationSummary = history
+                .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.parts[0].text}`)
+                .join('\n');
 
-    const prompt = `
-        **MODE: GENERATION**
-        You are a World-Class Viral Script Writer. Based on the conversation summary, generate a detailed, scene-by-scene script.
+        const prompt = `
+MODE: GENERATION
+You are a senior Short-Form Video Scriptwriter. Using the conversation summary below, produce ONE RAW JSON object only. Do not include any explanation, markdown, or backticks. Use Burmese for all textual fields.
 
-        **Conversation Summary:**
-        ---
-        ${conversationSummary}
-        ---
-        
-        **CRITICAL REQUIREMENT:** The entire script must be strategically cohesive. The Hook must make a promise that the Body fulfills. The value in the Body must create a natural transition to the Call to Action. All three parts must feel like a single, unified message.
+Conversation Summary:
+---
+${conversationSummary}
+---
 
-        Your task is to respond ONLY with a single, raw JSON object. Do not add any explanation, commentary, or markdown backticks.
-
-        The JSON structure MUST be:
-        {
-          "title": "A short, catchy title for the script.",
-          "estimated_duration": "e.g., 45-55 seconds",
-          "tone": "e.g., Expert & Authoritative",
-          "scenes": [
-            {
-              "scene_id": "SCENE 1: THE HOOK",
-              "script_burmese": "The Burmese script for this scene."
-            },
-            {
-              "scene_id": "SCENE 2: THE BODY/VALUE",
-              "script_burmese": "The Burmese script for this scene. Use \\n for line breaks."
-            },
-            {
-              "scene_id": "SCENE 3: THE CALL TO ACTION",
-              "script_burmese": "The Burmese script for the CTA."
-            }
-          ]
-        }
-    `;
-    const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
-
-    try {
-        const data = await fetchFromApi(requestBody, signal);
-        let responseText = data.candidates[0].content.parts[0].text;
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(responseText);
-    } catch (error) {
-        if (error.name === 'AbortError') console.log('Script generation was aborted.');
-        console.error("Failed to generate or parse script:", error);
-        return null;
+REQUIREMENTS:
+- Output exactly one JSON object and nothing else.
+- Schema (exact):
+    {
+        "title": "short Burmese title (<=8 words)",
+        "estimated_duration": "e.g., 40-55s",
+        "tone": "comma-separated tone keywords",
+        "scenes": [
+            { "scene_type": "hook", "script_burmese": "single short hook line (max ~10-15 words)" },
+            { "scene_type": "body", "script_burmese": "body lines, 1-3 short sentences; use \\\n+ to indicate line breaks" },
+            { "scene_type": "cta", "script_burmese": "single short CTA line with concrete action" }
+        ]
     }
+
+NOTES:
+- First scene must be "hook" and create curiosity or promise.
+- Body must deliver concrete value (steps, examples, numbers).
+- CTA must be a specific action tied to the value.
+- Keep concise for 15-60s delivery.
+
+Now produce the JSON for a script based on the conversation summary above.
+`;
+
+        const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+
+        try {
+                const data = await fetchFromApi(requestBody, signal);
+                let responseText = data.candidates[0].content.parts[0].text || '';
+                responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const start = responseText.indexOf('{');
+                const end = responseText.lastIndexOf('}');
+                if (start === -1 || end === -1 || end < start) return null;
+                const jsonString = responseText.substring(start, end + 1);
+                try { return JSON.parse(jsonString); }
+                catch (e) {
+                        try {
+                                const relaxed = jsonString.replace(/\r?\n/g, ' ').replace(/'/g, '"').replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                                return JSON.parse(relaxed);
+                        } catch (e2) { console.error('JSON parse failed in generateScriptFromHistory:', e2); return null; }
+                }
+        } catch (error) {
+                if (error.name === 'AbortError') console.log('Script generation was aborted.');
+                console.error("Failed to generate or parse script:", error);
+                return null;
+        }
+
 }
 
 /**
