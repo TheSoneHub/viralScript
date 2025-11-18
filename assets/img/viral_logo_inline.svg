@@ -12,7 +12,7 @@
     <path d="M12 8 L36 44 L44 36 L56 8 L44 8 L32 28 L20 8 Z" fill="#fff" opacity="0.95" transform="translate(-2,-2) scale(0.8)" />
   </g>
   <g transform="translate(74,40)">
-    <text x="0" y="0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#111">Viral</text>
+    <text x="0" y="0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF">Viral</text>
     <text x="88" y="0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#7c3aed">Script</text>
   </g>
 </svg>
