@@ -65,6 +65,22 @@ async function fetchFromApi(requestBody, signal) {
  * v8: Uses the strictest possible command structure to force JSON compliance.
  * @returns {object} A Gemini-formatted instruction object.
  */
+async function getSystemInstruction() {
+    const userProfile = typeof getUserProfile === 'function' ? getUserProfile() : null;
+    const insp = await loadInspiration().catch(() => ({ hooks: [], ctas: [] }));
+    let personalizationLayer = '';
+    if (userProfile && (userProfile.brand || userProfile.audience)) {
+        personalizationLayer = `\n---\nUSER PROFILE FOR PERSONALIZATION:\n- Brand Identity: "${userProfile.brand || 'Not provided'}"\n- Target Audience: "${userProfile.audience || 'Not provided'}"\n---\n`;
+    }
+
+    const sampleHooks = (insp.hooks || []).slice(0,3).map(h => `- ${h}`).join('\n') || '- [No hook samples available]';
+    const sampleCtas = (insp.ctas || []).slice(0,3).map(c => `- ${c}`).join('\n') || '- [No CTA samples available]';
+
+    const instructionText = `You are a professional, senior-level AI scriptwriter and short-form video strategist. Your goal is to produce tight, high-conversion scripts optimized for 15–60s social videos. Use the user's profile and the inspiration samples to create focused Hook -> Body -> CTA flows that are actionable, specific, and emotionally compelling.${personalizationLayer}\nINSPIRATION SAMPLES:\nHOOKS:\n${sampleHooks}\nCTAS:\n${sampleCtas}\n\nWORKFLOW:\n1) If the user's last message is a new topic, propose THREE short creative angles in Burmese (one short sentence each). Ask the user to pick one and STOP.\n2) When the user picks an angle, RESPOND ONLY with a single RAW JSON object (no commentary, no markdown, no backticks). The JSON must follow the schema: {"title":string,"estimated_duration":string,"tone":string,"scenes":[{"scene_type":"hook|body|cta","script_burmese":string}] } with at least one hook, one body, and one cta.\n3) If the conversation already contains a valid JSON script from you, switch to EDITING MODE: respond in Burmese (no JSON) and follow user's edit instructions precisely.\n\nQUALITY RULES:\n- Use Burmese for all text fields.\n- Hook: concise (10-15 words), create curiosity or promise.\n- Body: deliver concrete value (steps, numbers, example).\n- CTA: specific action tied to value (benefit-driven).\n- If you cannot produce valid JSON, respond with: ERROR_JSON: <one-line diagnostic in Burmese>.`;
+
+    return { role: 'user', parts: [{ text: instructionText }] };
+}
+
 async function generateChatResponse(history, signal) {
     const systemInstruction = await getSystemInstruction();
     const requestBody = { contents: [systemInstruction, ...history] };
