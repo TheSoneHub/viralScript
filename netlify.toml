@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+  command = "echo 'No build step'"
+
+[functions]
+  directory = "netlify/functions"
+
+[dev]
+  command = "npm run test"
+  port = 8888

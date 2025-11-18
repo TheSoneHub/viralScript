@@ -15,7 +15,8 @@ const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/ge
 async function fetchFromApi(requestBody, signal) {
     // Proxy call to server-side endpoint. Server holds the real API key.
     try {
-        const response = await fetch('/api/generate', {
+        // Netlify Function path
+        const response = await fetch('/.netlify/functions/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),

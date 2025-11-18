@@ -28,6 +28,37 @@ It's built on a "Coach, Not a Crutch" philosophy, enhanced with a "Hired Pro" wo
 To get your own instance of ViralScript AI running, follow these steps.
 
 ### Step 1: Set Up Google Sheet for Email Access
+````markdown
+# ViralScript AI 🧪
+
+**Live Demo Link:** [https://viralscript.netlify.app/](https://viralscript.netlify.app/)
+
+ViralScript AI is not just a script generator; it's your personal AI **"Chief Creative Officer."** Designed for Burmese content creators, this tool transforms a simple topic into a viral video concept by proposing strategic angles, generating complete scripts, and helping you refine your work until it's perfect.
+
+It's built on a "Coach, Not a Crutch" philosophy, enhanced with a "Hired Pro" workflow. You provide the vision; the AI handles the creative heavy lifting.
+
+## ✨ Core Features
+
+-   **🤖 Proactive Creative Strategy:** Don't just get a script. The AI first proposes **3 distinct, viral angles** (e.g., Contrarian, Secret Unveiling, Problem/Solve) for your topic, letting you choose the creative direction.
+-   **✍️ Full Script Production:** Once you choose an angle, the AI generates a complete, scene-by-scene script, including details for visuals, audio, and dialogue, and automatically populates the editor.
+-   **🧠 Personalized to Your Brand:** A dedicated "User Profile" section in the settings allows the AI to learn your brand identity and target audience, tailoring all suggestions to your unique style.
+-   **📱 Mobile-First Design:** A seamless experience whether you're brainstorming on your desktop or writing on your phone. The interface is fully responsive and handles mobile keyboards correctly.
+-   **🗄️ Secure Script Vault:** Save, load, and manage all your finished scripts directly in your browser's local storage. Your work is always private and accessible.
+-   **💡 Inspiration Banks:** Overcome writer's block with curated lists of viral hooks and calls-to-action.
+-   **🔐 Secure & Private Access:** User access is managed via a private Google Sheet, ensuring only approved users can log in. All user data (API Key, Profile, Scripts) is stored locally on the user's device.
+
+## 🛠️ Tech Stack
+
+-   **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES6+)
+-   **AI:** Google Gemini API
+-   **"Backend" for Access:** Google Sheets + Google Apps Script
+-   **Dependencies:** [Marked.js](https://marked.js.org/) for rendering Markdown in the chat.
+
+## 🚀 Setup & Configuration
+
+To get your own instance of ViralScript AI running, follow these steps.
+
+### Step 1: Set Up Google Sheet for Email Access
 
 1.  Create a new, private Google Sheet.
 2.  In **Column A**, list the email addresses of users you want to grant access to. Put one email in each row. **Do not add a header.**
@@ -71,9 +102,9 @@ Your application is now fully configured and ready to use!
 3.  **Receive Your Script:** The complete script will be automatically generated and placed into the Editor.
 4.  **Refine and Edit:** You can now edit the script directly in the editor or have a conversation with the AI to make revisions (e.g., "make the hook shorter" or "suggest a different CTA").
 
-## Local development, proxy server & tests (added)
+## Local development & tests (Netlify Functions)
 
-This repository includes a small local proxy server and unit tests to make development safer and easier.
+This repo uses Netlify Functions as the server-side proxy. The frontend is already wired to `/.netlify/functions/generate` and the function lives in `netlify/functions/generate.js`.
 
 ### Run unit tests
 
@@ -89,20 +120,65 @@ npm install
 npm test
 ```
 
-### Start the local proxy & static site
+### Local development with Netlify Functions (recommended)
 
-The project includes `server.js` — a minimal Express server that serves the static files and proxies AI requests to Google Gemini.
-
-Set your Gemini API key into the environment and start the server (PowerShell example):
+Install the Netlify CLI (either globally or use the devDependency installed by `npm install`) and run the local dev server which also runs functions:
 
 ```powershell
-$env:GEN_API_KEY = 'YOUR_GOOGLE_GEN_API_KEY_HERE'; npm run start-server
+# install globally (optional)
+npm i -g netlify-cli
+
+# or use the local devDependency after npm install
+npm run dev
 ```
 
-Visit `http://localhost:3000`.
+`netlify dev` serves the static site and executes Netlify Functions locally so you can test the full flow without deploying.
+
+### Deploying to Netlify
+
+1. Push the repository to GitHub (or connect your repo to Netlify).
+2. In Netlify, create a new site and connect the repo.
+3. In Netlify site settings → Build & deploy → Environment, add an environment variable:
+
+   - Key: `GEN_API_KEY`
+   - Value: `<YOUR_GOOGLE_GEN_API_KEY>`
+
+4. Deploy the site. Netlify will use `netlify.toml` and the function at `netlify/functions/generate.js` to provide the `/.netlify/functions/generate` endpoint.
+
+### Quick smoke test after deploy
+
+- Open the site on your device/browser.
+- In the AI Director chat, type a topic; the AI should propose three angles.
+- Reply with an angle number; the app should parse the AI's JSON response and populate the Editor (`Hook`, `Body`, `CTA`) instead of showing raw JSON in chat.
 
 ### Notes
-- The server reads `GEN_API_KEY` from the environment. Do NOT commit your key to source control.
-- CI is configured in `.github/workflows/ci.yml` to run tests on pushes and PRs to `main`.
 
-If you want me to harden the proxy for production (add `helmet`, `express-rate-limit`, and a Dockerfile), I can add those next.
+- Keep `GEN_API_KEY` secret — use Netlify Environment variables. Do not commit it to source control.
+- If you want, I can add a Netlify Deploy button or a short GitHub Actions workflow to auto-deploy on push.
+If you'd like a simpler one-click or automated deploy, follow the quick options below.
+
+---
+
+**One-click deploy (Netlify)**
+
+Click the button to create a new Netlify site from this repository (you'll still need to set `GEN_API_KEY` in Netlify site settings after creating the site):
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=TheSoneHub/viralScript)
+
+---
+
+**Automated deploy from GitHub (optional)**
+
+If you prefer automatic deploys on push to `main`, add the following GitHub Secrets to your repository settings:
+
+- `NETLIFY_AUTH_TOKEN` — a personal access token from your Netlify user (Account settings → Applications → Personal access tokens).
+- `NETLIFY_SITE_ID` — the Site ID from your Netlify site's General settings.
+
+Then enable the provided GitHub Action (it will run on pushes to `main` and deploy using the Netlify CLI).
+
+**After deploy (very important)**
+
+- In Netlify site settings → Build & deploy → Environment, add `GEN_API_KEY` with your Google Gemini API key.
+- Test the app: open the site, run the AI Director flow, and verify the Editor gets populated (no raw JSON in chat).
+
+````

@@ -1,4 +1,5 @@
 import { strict as assert } from 'assert';
+import { describe, it } from 'node:test';
 import { extractJSON, parseScriptJSON } from '../assets/js/modules/parser.js';
 
 describe('parser.extractJSON', () => {
