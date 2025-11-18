@@ -52,46 +52,44 @@ async function fetchFromApi(requestBody, signal) {
  * v8: Uses the strictest possible command structure to force JSON compliance.
  * @returns {object} A Gemini-formatted instruction object.
  */
-function getSystemInstruction() {
+async function loadInspiration() {
+    // Load hooks and cta banks (cached per page load)
+    if (window.__viral_inspiration) return window.__viral_inspiration;
+    const insp = { hooks: [], ctas: [] };
+    try {
+        const [hRes, cRes] = await Promise.all([
+            fetch('hooks.json').then(r => r.ok ? r.json() : []),
+            fetch('cta_bank.json').then(r => r.ok ? r.json() : [])
+        ]);
+        // flatten a few examples
+        if (Array.isArray(hRes)) {
+            hRes.forEach(cat => { if (cat.hooks && Array.isArray(cat.hooks)) insp.hooks.push(...cat.hooks); });
+        }
+        if (Array.isArray(cRes)) {
+            cRes.forEach(cat => { if (cat.ctas && Array.isArray(cat.ctas)) insp.ctas.push(...cat.ctas); });
+        }
+    } catch (e) {
+        console.warn('Could not load inspiration banks:', e);
+    }
+    window.__viral_inspiration = insp;
+    return insp;
+}
+
+async function getSystemInstruction() {
     const userProfile = getUserProfile();
+    const insp = await loadInspiration();
     let personalizationLayer = "";
     if (userProfile && (userProfile.brand || userProfile.audience)) {
-        personalizationLayer = `
-        ---
-        **USER PROFILE FOR PERSONALIZATION:**
-        - Brand Identity: "${userProfile.brand || 'Not provided'}"
-        - Target Audience: "${userProfile.audience || 'Not provided'}"
-        ---
-        `;
+        personalizationLayer = `\n---\n**USER PROFILE FOR PERSONALIZATION:**\n- Brand Identity: "${userProfile.brand || 'Not provided'}"\n- Target Audience: "${userProfile.audience || 'Not provided'}"\n---\n`;
     }
 
-    return {
-        role: "user",
-        parts: [{ "text": `You are a professional AI scriptwriter. You operate under a strict, multi-phase directive. Failure to follow the phase rules is not an option.
+    // pick a few short examples to embed as inspiration (up to 3 hooks and 3 ctas)
+    const sampleHooks = (insp.hooks || []).slice(0, 3).map(h => `- ${h}`).join('\n') || '- [No hook samples available]';
+    const sampleCtas = (insp.ctas || []).slice(0, 3).map(c => `- ${c}`).join('\n') || '- [No CTA samples available]';
 
-        ${personalizationLayer}
+    const instructionText = `You are a professional AI scriptwriter specialized in fast, high-conversion short-video scripts. Use the user's profile and the inspiration samples to craft strong Hook -> Body -> CTA flow. ${personalizationLayer}\nINSPIRATION (use these as style/angle prompts but DO NOT copy verbatim):\nHOOK SAMPLES:\n${sampleHooks}\nCTA SAMPLES:\n${sampleCtas}\n\nWORKFLOW & PHASES:\n1) ANGLE PROPOSAL: If the user's last message is a new topic, propose THREE distinct creative angles in Burmese, each one short (1-2 lines). End with the question: "ဒီ Angle ၃ မျိုးထဲက ဘယ်တစ်ခုကို အခြေခံပြီး Script အပြည့်အစုံ ရေးပေးရမလဲ?" and wait.\n2) SCRIPT PRODUCTION: If the user selects an angle, produce the complete script as a single RAW JSON object ONLY (no surrounding text or backticks). The JSON must include \`title\`, \`estimated_duration\`, \`tone\`, and \`scenes\` array with at least 3 scenes (Hook, Body, CTA). Use Burmese for scene text values. Ensure Hook, Body and CTA flow logically and reflect the inspiration.\n3) EDITING MODE: If the history already contains a valid JSON script from you, switch to editing mode: respond in natural Burmese, do NOT output JSON, and follow user revision instructions.\n\nAlways prefer short, punchy Hooks and clear CTAs that match the tone requested. Do not output any extra commentary.`;
 
-        **DIRECTIVE & WORKFLOW:**
-
-        **Phase 1: ANGLE PROPOSAL.**
-        - IF the user's last message is a new topic, you are in this phase.
-        - YOUR ONLY OUTPUT: Propose THREE distinct, creative angles in Burmese.
-        - TERMINATE your response with the question: "ဒီ Angle ၃ မျိုးထဲက ဘယ်တစ်ခုကို အခြေခံပြီး Script အပြည့်အစုံ ရေးပေးရမလဲ?"
-        - THEN STOP AND WAIT.
-
-        **Phase 2: SCRIPT PRODUCTION.**
-        - IF the user's last message is a choice of angle (e.g., "use angle 2")...
-        - YOUR ONLY OUTPUT: The complete, scene-by-scene script.
-        - **RESPONSE FORMAT: You are REQUIRED to respond ONLY with the raw JSON object. NO other text, no explanations, no apologies, NO Burmese language. Your entire output MUST start with \`{\` and end with \`}\`. THIS IS A STRICT COMMAND.**
-
-        **Phase 3: EDITING MODE.**
-        - IF the conversation history already contains a JSON script block from you...
-        - THEN your role is now a "Script Doctor."
-        - You are FORBIDDEN from generating JSON.
-        - YOUR ONLY OUTPUT: Conversational advice and revisions in natural Burmese.
-
-        Analyze the last message to determine your current phase and execute your directive precisely.`}]
-    };
+    return { role: 'user', parts: [{ text: instructionText }] };
 }
 
 /**
@@ -101,7 +99,7 @@ function getSystemInstruction() {
  * @returns {Promise<string>} The AI's next question or a special token.
  */
 async function generateChatResponse(history, signal) {
-    const systemInstruction = getSystemInstruction();
+    const systemInstruction = await getSystemInstruction();
     const requestBody = {
         contents: [systemInstruction, ...history]
     };
@@ -194,7 +192,12 @@ async function generateScriptFromHistory(history, signal) {
  * @returns {Promise<string>} The revised text. Returns original text on failure.
  */
 async function reviseScriptPart(part, currentText, instruction, signal) {
-    const prompt = `
+        // include short inspiration samples when available to nudge tone/CTA/hook choices
+        const insp = await loadInspiration();
+        const inspHooks = (insp.hooks || []).slice(0,3).map(h=>`- ${h}`).join('\n');
+        const inspCtas = (insp.ctas || []).slice(0,3).map(c=>`- ${c}`).join('\n');
+
+        const prompt = `
         **MODE: EDITING**
         You are a Script Doctor. Revise the following script part based on the user's instruction.
         - **Part to Revise:** ${part}
@@ -202,6 +205,7 @@ async function reviseScriptPart(part, currentText, instruction, signal) {
         - **User's Instruction:** "${instruction}"
         
         Respond ONLY with the newly revised text. Do not add any extra words, explanations, or quotes.
+                \nINSPIRATION SAMPLES (do not copy verbatim; use as style cues):\nHOOKS:\n${inspHooks}\nCTAS:\n${inspCtas}\n
     `;
     const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
 

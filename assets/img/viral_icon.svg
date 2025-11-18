@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Square icon (512x512) - stylized V + play spark -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ViralScript logo icon">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#ffb86b"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="64" fill="url(#g1)" />
+
+  <!-- circular backdrop -->
+  <circle cx="256" cy="256" r="140" fill="rgba(255,255,255,0.06)" />
+
+  <!-- stylized V shape -->
+  <g transform="translate(0,-6)">
+    <path d="M150 160 L236 320 L276 272 L352 160 L300 160 L256 228 L212 160 Z" fill="white" opacity="0.95" />
+    <!-- play triangle inside V (spark) -->
+    <polygon points="268,220 300,246 268,272" fill="url(#g2)" opacity="0.98" />
+  </g>
+
+  <!-- small sparkle -->
+  <g transform="translate(360,120)">
+    <path d="M0 12 L6 16 L12 12 L6 0 Z" fill="#fff" opacity="0.9" transform="rotate(15) scale(1.2)"/>
+  </g>
+</svg>
