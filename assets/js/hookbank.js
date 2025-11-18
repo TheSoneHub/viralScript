@@ -27,9 +27,26 @@ function initializeHookBank() {
     // --- Generic function to fetch and render data ---
     const fetchAndRender = async (bank) => {
         try {
-            const response = await fetch(bank.jsonFile);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const categories = await response.json();
+            // Try flexible fetch paths to support file:// and subpath hosting
+            const tryPaths = async (fileName) => {
+                const candidates = [fileName, `./${fileName}`, `/${fileName}`];
+                try {
+                    const baseDir = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+                    candidates.push(baseDir + fileName);
+                } catch (e) {}
+                for (const p of candidates) {
+                    try {
+                        const r = await fetch(p);
+                        if (!r.ok) continue;
+                        return await r.json();
+                    } catch (e) {
+                        // continue to next
+                    }
+                }
+                throw new Error(`Could not fetch ${fileName}`);
+            };
+
+            const categories = await tryPaths(bank.jsonFile);
 
             bank.listEl.innerHTML = ''; // Clear previous content
             
@@ -49,7 +66,7 @@ function initializeHookBank() {
 
         } catch (error) {
             console.error(`Failed to load inspiration bank from ${bank.jsonFile}:`, error);
-            bank.listEl.innerHTML = `<p style="color: var(--danger-color);">Inspiration Bank could not be loaded.</p>`;
+            bank.listEl.innerHTML = `<p style="color: var(--danger-color);">Inspiration Bank could not be loaded. Ensure you are running a local server or that ${bank.jsonFile} is reachable.</p>`;
         }
     };
 

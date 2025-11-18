@@ -70,9 +70,33 @@ async function loadInspiration() {
     if (window.__viral_inspiration) return window.__viral_inspiration;
     const insp = { hooks: [], ctas: [] };
     try {
+        // Try multiple paths because the app might be opened via file://, hosted at a subpath,
+        // or served from the site root. getJsonWithFallback will attempt several variants.
+        const getJsonWithFallback = async (fileName) => {
+            const attempts = [fileName, `./${fileName}`, `/${fileName}`];
+            // base directory of current document (e.g. /some/path/)
+            try {
+                const baseDir = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+                attempts.push(baseDir + fileName);
+            } catch (e) {
+                // ignore
+            }
+            for (const p of attempts) {
+                try {
+                    const res = await fetch(p);
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    return json;
+                } catch (e) {
+                    // try next
+                }
+            }
+            throw new Error(`Could not fetch ${fileName} from any known path`);
+        };
+
         const [hRes, cRes] = await Promise.all([
-            fetch('hooks.json').then(r => r.ok ? r.json() : []),
-            fetch('cta_bank.json').then(r => r.ok ? r.json() : [])
+            getJsonWithFallback('hooks.json').catch(() => []),
+            getJsonWithFallback('cta_bank.json').catch(() => [])
         ]);
         // flatten a few examples
         if (Array.isArray(hRes)) {
