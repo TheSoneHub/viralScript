@@ -1,6 +1,4 @@
 // /assets/js/main.js - Definitive Version with Universal JSON Parser
-import { extractJSON, parseScriptJSON } from './modules/parser.js';
-import { addMessageToChat, setUiLoading } from './modules/ui.js';
 
 // --- MOBILE KEYBOARD FIX ---
 function setAppHeight() {
@@ -174,56 +172,146 @@ function initializeApp() {
         if (dom.chatHistoryEl) dom.chatHistoryEl.innerHTML = '';
         clearEditor();
         const firstQuestion = "Welcome! What is the topic for your new script?";
-        addMessageToChat(dom, { role: 'model', text: firstQuestion });
+        addMessageToChat({ role: 'model', text: firstQuestion });
         state.chatHistory.push({ role: 'model', parts: [{ text: firstQuestion }] });
         showView('chat');
     }
     
-    // extractJSON is now provided by ./modules/parser.js
+    function extractJSON(text) {
+        if (!text || typeof text !== 'string') return null;
+        let candidate = text.trim();
+        // Decode HTML and strip tags (handles <pre><code> wrappers or escaped entities)
+        try {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = candidate;
+            candidate = (tmp.textContent || tmp.innerText || candidate).trim();
+        } catch (e) {
+            // ignore DOM parsing errors and continue with original text
+        }
+        // Remove zero-width and non-printing characters that sometimes wrap model output
+        candidate = candidate.replace(/\u200B|\uFEFF/g, '').trim();
+        // If JSON is inside triple backticks (```json or ```), extract inner content
+        const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+        if (fenceMatch && fenceMatch[1]) candidate = fenceMatch[1].trim();
+        // Remove any surrounding inline code backticks
+        candidate = candidate.replace(/^`|`$/g, '').trim();
+        const startIndex = candidate.indexOf('{');
+        const endIndex = candidate.lastIndexOf('}');
+        if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
+        let jsonString = candidate.substring(startIndex, endIndex + 1);
+        try { return JSON.parse(jsonString); }
+        catch (error) {
+            // Try a relaxed parse: decode HTML entities already done; attempt to fix common issues
+            try {
+                const relaxed = jsonString.replace(/\n/g, ' ').replace(/\t/g, ' ').replace(/'/g, '"');
+                return JSON.parse(relaxed);
+            } catch (e) {
+                return null;
+            }
+        }
+    }
 
     async function handleSendMessage() {
         const userMessageText = dom.chatInput.value.trim();
         if (!userMessageText || state.isAwaitingResponse) return;
-        addMessageToChat(dom, { role: 'user', text: userMessageText });
+        addMessageToChat({ role: 'user', text: userMessageText });
         state.chatHistory.push({ role: 'user', parts: [{ text: userMessageText }] });
         dom.chatInput.value = '';
-        setUiLoading(state, dom, true);
+        setUiLoading(true);
         try {
             const aiResponseText = await generateChatResponse(state.chatHistory);
             if (aiResponseText) {
                 const scriptJSON = extractJSON(aiResponseText);
                 if (scriptJSON) {
-                    // parse script JSON into editor fields
-                    const parsed = parseScriptJSON(scriptJSON);
-                    if (parsed) {
-                        dom.hookInput.value = parsed.hook || '';
-                        dom.bodyInput.value = parsed.body || '';
-                        dom.ctaInput.value = parsed.cta || '';
-                        showView('editor');
-                        const nextStepMessage = 'Draft ready — opening Editor.';
-                        addMessageToChat(dom, { role: 'model', text: nextStepMessage });
-                        state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
-                        state.appMode = 'EDITING';
-                    } else {
-                        addMessageToChat(dom, { role: 'model', text: 'Could not parse script object.' });
-                        state.chatHistory.push({ role: 'model', parts: [{ text: 'Could not parse script object.' }] });
-                    }
+                    processAndFillScript(scriptJSON);
                 } else {
-                    addMessageToChat(dom, { role: 'model', text: aiResponseText });
+                    addMessageToChat({ role: 'model', text: aiResponseText });
                     state.chatHistory.push({ role: 'model', parts: [{ text: aiResponseText }] });
                 }
             }
         } catch (error) {
             console.error("Critical Error in handleSendMessage:", error);
-            addMessageToChat(dom, { role: 'model', text: `**Error:** An unexpected error occurred.` });
+            addMessageToChat({ role: 'model', text: `**Error:** An unexpected error occurred.` });
         } finally {
-            setUiLoading(state, dom, false);
+            setUiLoading(false);
         }
     }
 
-    // script parsing and filling moved to parser module; handled inline where responses arrive
+    function processAndFillScript(scriptJSON) {
+        try {
+            if (!scriptJSON || !scriptJSON.scenes || !Array.isArray(scriptJSON.scenes) || scriptJSON.scenes.length === 0) {
+                throw new Error("Invalid or empty scenes array in JSON.");
+            }
 
-    // UI helpers for messaging and loading live in ./modules/ui.js (imported at top)
+            const scenes = scriptJSON.scenes;
+            let hook = '', body = '', cta = '';
+
+            const getUniversalSceneText = (scene) => {
+                if (!scene) return '';
+                if (typeof scene.script_burmese === 'string') return scene.script_burmese;
+                if (typeof scene.dialogue_burmese === 'string') return scene.dialogue_burmese;
+                if (Array.isArray(scene.dialogue)) {
+                    return scene.dialogue.map(item => item.line || '').join(' ').trim();
+                }
+                return '';
+            };
+
+            if (scenes.length === 1) {
+                hook = getUniversalSceneText(scenes[0]);
+            } else if (scenes.length === 2) {
+                hook = getUniversalSceneText(scenes[0]);
+                cta = getUniversalSceneText(scenes[1]);
+            } else { // 3 or more scenes
+                hook = getUniversalSceneText(scenes[0]);
+                cta = getUniversalSceneText(scenes[scenes.length - 1]);
+                body = scenes.slice(1, -1).map(getUniversalSceneText).join('\n\n').trim();
+            }
+
+            if (!hook && !body && !cta) {
+                throw new Error("Failed to extract any text from any known key in the scenes.");
+            }
+
+            dom.hookInput.value = hook;
+            dom.bodyInput.value = body;
+            dom.ctaInput.value = cta;
+            
+            showView('editor');
+            
+            const nextStepMessage = "The first draft is ready in the Editor.";
+            addMessageToChat({ role: 'model', text: nextStepMessage });
+            state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
+            state.appMode = 'EDITING';
+
+        } catch (error) {
+            console.error("Error in processAndFillScript:", error);
+            const recoveryMessage = "It seems there was an error processing the script format. Please try asking again.";
+            addMessageToChat({ role: 'model', text: recoveryMessage });
+        }
+    }
+
+    function addMessageToChat({ role, text }) {
+        if (!dom.chatHistoryEl) return;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role === 'user' ? 'user-message' : 'ai-message'}`;
+        messageDiv.innerHTML = marked.parse(text || '');
+        dom.chatHistoryEl.appendChild(messageDiv);
+        dom.chatHistoryEl.scrollTop = dom.chatHistoryEl.scrollHeight;
+    }
+
+    function setUiLoading(isLoading) {
+        state.isAwaitingResponse = isLoading;
+        if(dom.chatInput) dom.chatInput.disabled = isLoading;
+        if(dom.sendChatBtn) dom.sendChatBtn.disabled = isLoading;
+        const skeleton = dom.chatHistoryEl.querySelector('.skeleton-message');
+        if (isLoading && !skeleton) {
+            const skeletonDiv = document.createElement('div');
+            skeletonDiv.className = 'chat-message skeleton-message';
+            skeletonDiv.innerHTML = `<div class="skeleton-line"></div>`;
+            dom.chatHistoryEl.appendChild(skeletonDiv);
+        } else if (!isLoading && skeleton) {
+            skeleton.remove();
+        }
+    }
 
     function clearEditor() {
         if(dom.hookInput) dom.hookInput.value = '';
