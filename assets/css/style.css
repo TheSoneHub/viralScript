@@ -635,3 +635,21 @@ textarea:focus, #chat-input:focus {
         background-color: rgba(0,0,0,0.2);
     }
 }
+
+/* Toast used for small user feedback (copy success/failure) */
+.vs-toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 80px;
+    background-color: rgba(0,0,0,0.8);
+    color: white;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    opacity: 0;
+    transition: opacity 180ms ease, transform 180ms ease;
+    z-index: 2000;
+    pointer-events: none;
+}
+.vs-toast.visible { opacity: 1; transform: translateX(-50%) translateY(-6px); }

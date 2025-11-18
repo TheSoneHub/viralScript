@@ -442,9 +442,55 @@ function initializeApp() {
              const title = prompt("Script Title:");
             if (title) { saveScript({ id: Date.now(), title, hook: dom.hookInput.value, body: dom.bodyInput.value, cta: dom.ctaInput.value }); }
         });
-        if (dom.copyScriptBtn) dom.copyScriptBtn.addEventListener('click', () => {
+        // Robust copy handler with fallback for older/limited clipboard environments
+        async function copyToClipboard(text) {
+            // Prefer navigator.clipboard when available and in secure context
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (e) {
+                    // fallthrough to execCommand fallback
+                }
+            }
+            // Fallback: create a temporary textarea and use execCommand
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                // prevent scrolling to bottom
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const successful = document.execCommand('copy');
+                ta.remove();
+                return !!successful;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function showToast(msg, timeout = 2000) {
+            let toast = document.getElementById('vs-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'vs-toast';
+                toast.className = 'vs-toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            clearTimeout(toast._hideTimeout);
+            toast._hideTimeout = setTimeout(() => { toast.classList.remove('visible'); }, timeout);
+        }
+
+        if (dom.copyScriptBtn) dom.copyScriptBtn.addEventListener('click', async () => {
             const fullScript = `[Hook]\n${dom.hookInput.value}\n\n[Body]\n${dom.bodyInput.value}\n\n[CTA]\n${dom.ctaInput.value}`;
-            navigator.clipboard.writeText(fullScript).then(() => alert("Script copied!"));
+            const ok = await copyToClipboard(fullScript);
+            if (ok) showToast('Script copied!');
+            else showToast('Could not copy to clipboard. Please copy manually.');
         });
         if (dom.settingsBtn) dom.settingsBtn.addEventListener('click', () => {
              const userProfile = getUserProfile();
