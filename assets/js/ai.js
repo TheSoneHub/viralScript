@@ -128,8 +128,9 @@ async function generateChatResponse(history, signal) {
         if (error.message === "API_KEY_MISSING") {
              return " ကျေးဇူးပြု၍ Settings တွင် သင်၏ API Key ကို ဦးစွာထည့်သွင်းပါ။";
         }
+        // For unexpected errors, rethrow so the UI can surface detailed info to the user
         console.error("Failed to generate chat response:", error);
-        return "AI နှင့် ဆက်သွယ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။ ခဏအကြာတွင် ထပ်မံကြိုးစားကြည့်ပါ။";
+        throw error;
     }
 }
 

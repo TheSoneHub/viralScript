@@ -231,7 +231,17 @@ function initializeApp() {
             }
         } catch (error) {
             console.error("Critical Error in handleSendMessage:", error);
-            addMessageToChat({ role: 'model', text: `**Error:** An unexpected error occurred.` });
+            const messageText = (error && error.message) ? error.message : String(error);
+            // Surface helpful messages for common cases
+            let userMessage = `**Error:** ${messageText}`;
+            if (messageText.includes('GEN_API_KEY not configured') || messageText.includes('API_KEY_MISSING')) {
+                userMessage = "**Error:** API Key not configured. Open Settings and add your Google Gemini API Key.";
+            } else if (messageText.includes('Proxy API Error')) {
+                userMessage = `**Error:** Server proxy error: ${messageText}`;
+            }
+            // Update API status indicator
+            try { if (dom.apiStatusLight) dom.apiStatusLight.className = 'status-light-red'; } catch (e) {}
+            addMessageToChat({ role: 'model', text: userMessage });
         } finally {
             setUiLoading(false);
         }
