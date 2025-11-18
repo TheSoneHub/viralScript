@@ -17,7 +17,11 @@
     
     <!-- Styles & Icon -->
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- Favicon & Icons: SVG used directly; PNG files can be generated and placed under assets/img -->
+    <link rel="icon" href="assets/img/viral_icon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/img/viral_icon-512.png" sizes="512x512" type="image/png">
+    <link rel="icon" href="assets/img/viral_icon-192.png" sizes="192x192" type="image/png">
+    <link rel="icon" href="assets/img/viral_icon-128.png" sizes="128x128" type="image/png">
 </head>
 <body>
 
@@ -26,7 +30,9 @@
     <!-- ACCESS GATE (Login Screen) -->
     <div id="access-gate">
         <div class="gate-content">
-            <h1>ViralScript AI</h1>
+            <div class="gate-logo">
+                <img src="assets/img/viral_logo_inline.svg" alt="ViralScript">
+            </div>
             <p>Enter your approved email to access your AI Script Partner.</p>
             <input type="email" id="access-email-input" placeholder="your.email@example.com" autocomplete="email">
             <button id="enter-app-btn">Continue</button>
@@ -40,7 +46,10 @@
         <!-- VIEW 1: EDITOR -->
         <div id="editor-view" class="app-view hidden">
             <div class="view-header">
-                <h1>Script Editor</h1>
+                <div class="view-title">
+                    <img class="header-logo" src="assets/img/viral_logo_inline.svg" alt="ViralScript">
+                    <h1>Script Editor</h1>
+                </div>
                 <div class="header-actions">
                     <button id="new-script-btn" class="header-action-btn secondary">New</button>
                     <button id="save-script-btn" class="header-action-btn">Save</button>
@@ -72,7 +81,10 @@
         <!-- VIEW 2: AI CHAT (Default View) -->
         <div id="chat-view" class="app-view">
             <div class="view-header">
-                <h1>AI Director</h1>
+                <div class="view-title">
+                    <img class="header-logo" src="assets/img/viral_logo_inline.svg" alt="ViralScript">
+                    <h1>AI Director</h1>
+                </div>
                 <div class="header-controls">
                     <div id="api-status" class="status-light-red" title="API Key Required"></div>
                     <button id="my-scripts-btn" class="icon-btn" title="My Scripts">

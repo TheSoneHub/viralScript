@@ -174,6 +174,38 @@ body {
     font-weight: 600;
 }
 
+/* Logo helper classes (moved from inline styles) */
+.view-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.header-logo {
+    height: 28px;
+    width: auto;
+    display: inline-block;
+}
+.gate-logo img {
+    height: 64px;
+    width: auto;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive logo sizes */
+@media (min-width: 768px) {
+    .header-logo { height: 32px; }
+    .gate-logo img { height: 80px; }
+}
+
+@media (min-width: 1024px) {
+    .header-logo { height: 40px; }
+    .gate-logo img { height: 96px; }
+    /* On desktop make the view header use the larger wordmark spacing */
+    .view-header { padding: 1rem 1.5rem; }
+    .view-title h1 { font-size: 1.5rem; }
+}
+
 /* === 4. BOTTOM NAVIGATION BAR === */
 .mobile-nav {
     display: flex;

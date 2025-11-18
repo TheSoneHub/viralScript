@@ -1,57 +1,46 @@
-const fetch = require('node-fetch');
-
-const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
+// Netlify Function: proxy to Google Gemini
+// Receives POST with requestBody, forwards to Gemini using GEN_API_KEY from env
 
 exports.handler = async function(event, context) {
-  // Allow only POST
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  // Get the API key from env
-  const API_KEY = process.env.GEN_API_KEY;
-  if (!API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Missing server-side GEN_API_KEY environment variable' }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
+  // basic rate limit (per IP, in-memory)
+  const MIN_INTERVAL_MS = 300;
+  if (!global._lastReq) global._lastReq = {};
+  const ip = event.headers['client-ip'] || event.headers['x-forwarded-for'] || event.requestContext?.identity?.sourceIp || context?.identity?.sourceIp || 'unknown';
+  const now = Date.now();
+  const last = global._lastReq[ip] || 0;
+  if (now - last < MIN_INTERVAL_MS) {
+    return { statusCode: 429, body: JSON.stringify({ error: 'Too many requests' }) };
   }
+  global._lastReq[ip] = now;
 
-  let requestBody = {};
+  let body;
   try {
-    requestBody = JSON.parse(event.body || '{}');
+    body = JSON.parse(event.body);
   } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }), headers: { 'Content-Type': 'application/json' } };
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
+  const GEN_API_KEY = process.env.GEN_API_KEY;
+  if (!GEN_API_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'GEN_API_KEY not configured' }) };
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEN_API_KEY}`;
+
   try {
-    const res = await fetch(`${API_ENDPOINT}?key=${API_KEY}`, {
+    const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(body),
     });
-
-    const text = await res.text();
-    const statusCode = res.status;
-
-    // Forward status and body
-    return {
-      statusCode: statusCode,
-      body: text,
-      headers: {
-        'Content-Type': res.headers.get('content-type') || 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-      }
-    };
+    const data = await resp.json();
+    return { statusCode: resp.status, body: JSON.stringify(data) };
   } catch (err) {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ error: 'Proxy request failed', detail: err.message }),
-      headers: { 'Content-Type': 'application/json' }
-    };
+    console.error('Netlify function proxy error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Proxy error' }) };
   }
 };
