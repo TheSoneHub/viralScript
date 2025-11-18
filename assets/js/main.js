@@ -249,52 +249,123 @@ function initializeApp() {
 
     function processAndFillScript(scriptJSON) {
         try {
-            if (!scriptJSON || !scriptJSON.scenes || !Array.isArray(scriptJSON.scenes) || scriptJSON.scenes.length === 0) {
-                throw new Error("Invalid or empty scenes array in JSON.");
+            // Helper: attempt to locate a scenes array inside various shapes of JSON
+            function findScenes(obj) {
+                if (!obj || typeof obj !== 'object') return null;
+                if (Array.isArray(obj.scenes) && obj.scenes.length > 0) return obj.scenes;
+                // support objects where scenes is an object with numeric keys
+                if (obj.scenes && typeof obj.scenes === 'object' && !Array.isArray(obj.scenes)) {
+                    const arr = Object.values(obj.scenes).filter(Boolean);
+                    if (arr.length > 0) return arr;
+                }
+                // search nested properties for an array that looks like scenes
+                for (const key of Object.keys(obj)) {
+                    const val = obj[key];
+                    if (Array.isArray(val) && val.length > 0) return val;
+                    if (val && typeof val === 'object') {
+                        const found = findScenes(val);
+                        if (found) return found;
+                    }
+                }
+                return null;
             }
 
-            const scenes = scriptJSON.scenes;
-            let hook = '', body = '', cta = '';
+            let scenes = null;
+            if (scriptJSON && Array.isArray(scriptJSON.scenes) && scriptJSON.scenes.length) scenes = scriptJSON.scenes;
+            else scenes = findScenes(scriptJSON);
 
+            if (!scenes || !Array.isArray(scenes) || scenes.length === 0) {
+                throw new Error('Invalid or empty scenes array in JSON.');
+            }
+
+            // Helper: normalize scene to text by checking many possible keys
             const getUniversalSceneText = (scene) => {
                 if (!scene) return '';
-                if (typeof scene.script_burmese === 'string') return scene.script_burmese;
-                if (typeof scene.dialogue_burmese === 'string') return scene.dialogue_burmese;
-                if (Array.isArray(scene.dialogue)) {
-                    return scene.dialogue.map(item => item.line || '').join(' ').trim();
+                // If the scene is a plain string
+                if (typeof scene === 'string') return scene.trim();
+                // Common keys to check
+                const candidates = [
+                    'script_burmese', 'script', 'script_mm', 'script_bm',
+                    'dialogue_burmese', 'dialogue', 'text', 'lines', 'body', 'content'
+                ];
+                for (const key of candidates) {
+                    if (typeof scene[key] === 'string' && scene[key].trim()) return scene[key].trim();
+                    if (Array.isArray(scene[key])) {
+                        // array of lines or objects
+                        return scene[key].map(item => (typeof item === 'string' ? item : (item.line || item.text || '') )).join(' ').trim();
+                    }
                 }
+                // If it's an object with nested dialogue array
+                if (Array.isArray(scene.dialogue)) {
+                    return scene.dialogue.map(item => (typeof item === 'string' ? item : (item.line || item.text || ''))).join(' ').trim();
+                }
+                // If it's an object with any string values, join them
+                const strings = Object.values(scene).filter(v => typeof v === 'string' && v.trim());
+                if (strings.length) return strings.join(' ').trim();
                 return '';
             };
 
+            let hook = '', body = '', cta = '';
             if (scenes.length === 1) {
                 hook = getUniversalSceneText(scenes[0]);
             } else if (scenes.length === 2) {
                 hook = getUniversalSceneText(scenes[0]);
                 cta = getUniversalSceneText(scenes[1]);
-            } else { // 3 or more scenes
+            } else {
                 hook = getUniversalSceneText(scenes[0]);
                 cta = getUniversalSceneText(scenes[scenes.length - 1]);
-                body = scenes.slice(1, -1).map(getUniversalSceneText).join('\n\n').trim();
+                body = scenes.slice(1, -1).map(getUniversalSceneText).filter(Boolean).join('\n\n').trim();
+            }
+
+            // As a fallback, if no parts were extracted, try to locate any large string in the JSON and split
+            if (!hook && !body && !cta) {
+                // find the longest string value in the object
+                function findLongestString(o) {
+                    let longest = '';
+                    if (typeof o === 'string') return o;
+                    if (Array.isArray(o)) {
+                        for (const it of o) {
+                            const s = findLongestString(it);
+                            if (s.length > longest.length) longest = s;
+                        }
+                        return longest;
+                    }
+                    if (o && typeof o === 'object') {
+                        for (const v of Object.values(o)) {
+                            const s = findLongestString(v);
+                            if (s && s.length > longest.length) longest = s;
+                        }
+                    }
+                    return longest;
+                }
+                const long = findLongestString(scriptJSON).trim();
+                if (long) {
+                    // split into three roughly equal parts as fallback
+                    const parts = long.split('\n\n');
+                    hook = parts[0] || long.slice(0, 120);
+                    body = parts.slice(1, -1).join('\n\n') || long.slice(120, 420);
+                    cta = parts.slice(-1)[0] || long.slice(-120);
+                }
             }
 
             if (!hook && !body && !cta) {
-                throw new Error("Failed to extract any text from any known key in the scenes.");
+                throw new Error('Failed to extract any text from any known key in the scenes.');
             }
 
             dom.hookInput.value = hook;
             dom.bodyInput.value = body;
             dom.ctaInput.value = cta;
-            
+
             showView('editor');
-            
-            const nextStepMessage = "The first draft is ready in the Editor.";
+
+            const nextStepMessage = 'The first draft is ready in the Editor.';
             addMessageToChat({ role: 'model', text: nextStepMessage });
             state.chatHistory.push({ role: 'model', parts: [{ text: nextStepMessage }] });
             state.appMode = 'EDITING';
 
         } catch (error) {
-            console.error("Error in processAndFillScript:", error);
-            const recoveryMessage = "It seems there was an error processing the script format. Please try asking again.";
+            console.error('Error in processAndFillScript:', error);
+            const recoveryMessage = 'It seems there was an error processing the script format. Please try asking again.';
             addMessageToChat({ role: 'model', text: recoveryMessage });
         }
     }
