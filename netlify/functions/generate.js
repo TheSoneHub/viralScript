@@ -24,9 +24,19 @@ exports.handler = async function(event, context) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
-  const GEN_API_KEY = process.env.GEN_API_KEY;
+  let GEN_API_KEY = process.env.GEN_API_KEY;
+  // Allow a developer API key passed from the client for local testing only
+  // Client should send { ..., dev_api_key: '<key>' } and this will be used only when not in production
   if (!GEN_API_KEY) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'GEN_API_KEY not configured' }) };
+    if (body && body.dev_api_key && process.env.NODE_ENV !== 'production') {
+      GEN_API_KEY = body.dev_api_key;
+      // remove dev_api_key so it isn't forwarded to the external API
+      delete body.dev_api_key;
+    }
+  }
+
+  if (!GEN_API_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'GEN_API_KEY not configured. Set GEN_API_KEY in your Netlify environment variables or provide dev_api_key in request body for local testing.' }) };
   }
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEN_API_KEY}`;

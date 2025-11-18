@@ -16,10 +16,23 @@ async function fetchFromApi(requestBody, signal) {
     // Proxy call to server-side endpoint. Server holds the real API key.
     try {
         // Netlify Function path
+        // If the user has provided a local API key (saved via Settings), include it as a dev key
+        // The Netlify function will only accept this dev key when running in non-production.
+        let outboundBody = requestBody;
+        try {
+            const localKey = typeof getApiKey === 'function' ? getApiKey() : null;
+            if (localKey) {
+                // clone so we don't mutate the original
+                outboundBody = Object.assign({}, requestBody, { dev_api_key: localKey });
+            }
+        } catch (e) {
+            // ignore errors reading local key
+        }
+
         const response = await fetch('/.netlify/functions/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(outboundBody),
             signal,
         });
 
